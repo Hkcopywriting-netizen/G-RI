@@ -1,9 +1,12 @@
-sample = data.copy()
-sample['lower'] = sample['customerInput_appDt'] - DateOffset(months=1)
-sample['upper'] = sample['customerInput_appDt'] + DateOffset(months=3)
-sample['in_window'] = (
-    (sample['lower'] <= sample['open_dte']) & 
-    (sample['open_dte'] <= sample['upper'])
-)
-print(sample['in_window'].value_counts())
-print(sample[['customerInput_appDt','open_dte','lower','upper','in_window']].head(20)) 
+# Convert dates to datetime
+data['open_dte'] = pd.to_datetime(data['open_dte'])
+data['customerInput_appDt'] = pd.to_datetime(data['customerInput_appDt'])
+
+# Filter proximity window - 1 month prior to 3 months after application date
+data = data[
+    (data['customerInput_appDt'] - DateOffset(months=1) <= data['open_dte']) &
+    (data['open_dte'] <= data['customerInput_appDt'] + DateOffset(months=3))
+]
+
+print("Dataset has {} entries and {} features".format(*data.shape))
+data.head(5)
