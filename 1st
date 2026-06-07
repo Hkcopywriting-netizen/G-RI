@@ -51,3 +51,112 @@ plt.ylabel('Percentage')
 plt.title('Good/Bad Rate')
 plt.xticks([0, 1], ['Bad (0)', 'Good (1)'])
 plt.show()
+
+
+
+
+Got it. Let me rewrite all the markdown cells that need changing. I will match the writing style of the existing Python file — same tone, same way of explaining, same structure. Only changing what needs to change.
+
+---
+
+## MARKDOWN CELL 3 — Importing the dataset
+
+Keep the top section exactly as is. Only change the "Read in data from S3 bucket" heading and its paragraph. Replace with:
+
+---
+
+### Read in data
+
+In this template we have consumer data from the client and a sample or starting population. The data is read from a local CSV file which contains the rejected applications matched with the TU account and trades data for further analysis.
+
+So we will have one dataset in the studio which contains both the consumer file and the TU credit account file joined on a common primary key column which is the party_id.
+
+---
+
+## MARKDOWN CELL 4 — Filtering out the required Line of Business
+
+Keep everything exactly as is up to and including the three attribute bullet points. Only replace the last two paragraphs which describe the line_of_business function. Replace with:
+
+---
+
+We filter the data directly on the line of business i.e. with the same kind of trade for which the applications were turned down. The filtering is based on the three attributes mentioned above — kind of business code, portfolio type code, and account type code — and we keep only the rows that match the bankcard definition.
+
+We can expand the conditions that define LOBs and modify the portfolio type, KOB type, and account type codes which makes up for different kinds of businesses. These customizations can be at any point as per requirement.
+
+---
+
+## MARKDOWN CELL 5 — Proximity Window
+
+Keep everything exactly as is up to and including the explanation of why we do this. Only replace the last section which describes the proximity_window function. Replace with:
+
+---
+
+First we convert the date columns to a proper date format to begin the analysis.
+
+- open_dte: It is the date when the account (trade) was opened elsewhere.
+- customerInput_appDt: It is the application date of the rejected consumer.
+
+We then filter the data on the condition that a similar type of trade (same LOB) was opened in the proximity months from the application date of the current rejected one. In this case we have looked one month prior and three months after the application date.
+
+---
+
+## MARKDOWN CELL 7 — Performance Evaluation
+
+Keep everything exactly as is up to and including the payment pattern character definitions and the line "We find out how many months does it take for the account to go 60/90/120 days past due."
+
+Then replace the function description paragraph with:
+
+---
+
+The function is na60. We create our performance variable to then check how those proxy trades performed in the performance window. For the performance calculation we combine the account rate profile code and the payment pattern text, reverse the combined string so that the oldest payment history comes first, and use regex search to find the first occurrence of a character that denotes 60+ days past due. We then calculate how many months it took from the account open date to reach that delinquency level.
+
+Arguments:
+- data: The dataframe which was filtered down to consumers with a similar trade as the original rejected application opened in X months from the date applied on and they must have no null values in open date.
+
+Returns:
+- A series with the new performance column na60 — the number of months it took for the account to go 60 days past due. If no delinquency is found the value is set to 999.
+
+Then after the na60 code cell add this line before the vintage curve:
+
+---
+
+Let's see what this performance looks like using a vintage curve.
+
+---
+
+## MARKDOWN CELL 8 — Target Variable Definition
+
+Keep exactly as is:
+
+*So now that we have our performance column we need to decide how to differentiate between good and bad consumers. So a full performance definition is if person goes 60/90/120 dpd in X months or less. Now this number of months and delinquency level is defined directly in the code below.*
+
+Then replace the function description with:
+
+---
+
+We create the target variable BGI60in12 directly from the na60 column. Any delinquency level less than or equal to 12 months from the account open date is considered to be bad i.e. BGI60in12 = 0, or else good i.e. BGI60in12 = 1.
+
+- BGI60in12 = 0 : Bad — went 60 days past due within 12 months
+- BGI60in12 = 1 : Good — did not go 60 days past due within 12 months
+
+---
+
+## MARKDOWN CELL 9 — Plot Good/Bad Rate
+
+Keep the heading as is. Replace the function description with:
+
+---
+
+We take the performance and target variable from the dataframe and plot the good and bad rate percentage. The chart shows the distribution of consumers who went 60 days past due within 12 months versus those who did not.
+
+Arguments:
+- data: The final dataframe after having the performance target column BGI60in12.
+- DPD: 60 days past due which is used as the definition of bad.
+- months: 12 months which is the performance window used for the calculation.
+
+Returns:
+- A bar chart with the count values and percentage of good and bad consumers plotted against the BGI60in12 target variable.
+
+---
+
+That is every markdown cell that needs changing. Everything else stays exactly as the original file had it.
