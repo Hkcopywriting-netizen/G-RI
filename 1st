@@ -1,0 +1,9 @@
+sample = data.copy()
+sample['lower'] = sample['customerInput_appDt'] - DateOffset(months=1)
+sample['upper'] = sample['customerInput_appDt'] + DateOffset(months=3)
+sample['in_window'] = (
+    (sample['lower'] <= sample['open_dte']) & 
+    (sample['open_dte'] <= sample['upper'])
+)
+print(sample['in_window'].value_counts())
+print(sample[['customerInput_appDt','open_dte','lower','upper','in_window']].head(20)) 
