@@ -60,3 +60,20 @@ data.head(5)
 
 
 months_to_subtract = int(row['sticks_len'] - row['string60Plus'])
+
+
+
+
+
+
+
+
+# Filter to Bankcard line of business
+data = data[
+    data['kob_posn_1_cde'].isin(['B', 'F', 'N', 'Q']) &
+    data['porf_typ_cde'].isin(['R', 'O', 'C']) &
+    data['acct_typ_cde'].isin(['BC', 'CB', 'CC', 'SC', 'FX'])
+]
+
+print("Dataset has {} entries and {} features".format(*data.shape))
+data.head(5)
