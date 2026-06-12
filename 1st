@@ -2,6 +2,7 @@
 ###################### Libraries / Spark / Directory ##########################
 ################################################################################
 
+library(filtr)
 library(fst)
 library(TUISG)
 library(titanng)
@@ -12,87 +13,154 @@ library(tidyverse)
 library(DBI)
 library(sparklyr)
 library(perfExits)
-library(filtr)
 
 options(scipen = 999)
-setwd("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh")
+setwd("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh") # ⚠️ CHANGED
 
 sc <- spark_connect(master = "yarn")
 
 ################################################################################
-############################ Read 2024 Driver ################################# # ⚠️ CHANGED
+############################### Set Params ####################################
 ################################################################################
 
-# We are reading previously created 2024 drivers to append their performance
-# using the latest archive available. Basically,
-# For Q3 2024 - 12 month performance (previously had only 6m) # ⚠️ CHANGED
+# Set year of interest
+year_interest <- c("2025") # ⚠️ CHANGED
 
-cards_Q32024 <- tbl(sc, "bu_fs.shrajpu_q3_2024") %>% # ⚠️ CHANGED
-  filter(year == "2024") # ⚠️ CHANGED
+archive_start_date <- as.Date("2025-03-31") # ⚠️ CHANGED
+archive_end_date   <- as.Date("2026-04-30") # ⚠️ CHANGED
+archives_tot <- seq(from = archive_start_date + 1,
+                    to = archive_end_date,
+                    by = "1 months") - 1
 
 ################################################################################
-########################### New Performance - 12M ##############################
+################################ Data Pull ####################################
 ################################################################################
 
-# Q3 2024 # ⚠️ CHANGED
-cards_Q32024_update <- cards_Q32024 %>% # ⚠️ CHANGED
-  select(party_id, acct_id, year, company, subcode) %>%
-  left_join(tbl(sc, "bc3.trades") %>%
-              filter(data_date == "2025-09-30"), # ⚠️ CHANGED
-            by = c("party_id", "acct_id")) %>%
-  compute("cards_Q32024_update") # ⚠️ CHANGED
+cc_perf <- cc_perf <- tbl(sc, "bc3.trades") %>%
+  mutate(
+    cmplnc_rem_cde = coalesce(cmplnc_rem_cde, ""),
+    kob_posn_1_cde = coalesce(kob_posn_1_cde, ""),
+    porf_typ_cde   = coalesce(porf_typ_cde, ""),
+    acct_typ_cde   = coalesce(acct_typ_cde, ""),
+    subcode        = paste0(kob_posn_1_cde, rsub_base_cde, rsub_sfx_cde),
+    rpt_mob        = months_between(
+      trunc(eff_dte, "MM"),
+      trunc(open_dte, "MM")
+    ),
+    credit_line = case_when(
+      cr_lmt_amt  > 0 ~ as.integer(cr_lmt_amt),
+      high_cr_amt > 0 ~ as.integer(high_cr_amt),
+      TRUE            ~ as.integer(NA)
+    )
+  ) %>%
+  filter(
+    data_date %in% c(archives_tot),
+    ! ecoa_cde %in% c("A", "T", "X"),
+    ! (cmplnc_rem_cde %in% c("AID", "CAD")),
+    !! body(creditCard)
+  ) %>%
+  filter(month(open_dte) %in% c(1,2,3) & # ⚠️ CHANGED - Q1 months
+         year(open_dte) %in% year_interest) %>%
+  mutate(
+    open_quarter = paste0(year(open_dte), "-Q", quarter(open_dte)),
+    quarter      = paste0("Q", quarter(open_dte)),
+    year         = year(open_dte),
+    archive_dte  = case_when(
+      month(open_dte) %in% c(1,2,3) ~
+        paste0(as.character(year(open_dte)-1L), '-12-31') # ⚠️ CHANGED - Q1 archive date
+    )
+  ) %>%
+  select(
+    party_id, acct_id, data_date,
+    subcode, acct_num, porf_typ_cde, acct_typ_cde,
+    open_dte, clsd_dte, eff_dte, rpt_mob,
+    curr_bal_amt, cr_lmt_amt, high_cr_amt, credit_line,
+    kob_posn_1_cde, kob_posn_2_cde, ecoa_cde,
+    rsub_base_cde, rsub_sfx_cde,
+    acct_mop_cde, acct_rte_prfl_cde, payt_pttrn_txt,
+    max_delq_rte_cde, max_delq_dte,
+    past_due_amt, orgn_chrg_off_amt,
+    affil_rem_cde, rem_frst_rpt_dte,
+    gnrc_rem_cde, gnrcrem_frsrpt_dte,
+    rte_rem_cde, rte_rem_frsrpt_dte,
+    open_quarter, year, archive_dte,
+    quarter
+  ) %>%
+  left_join(
+    tbl(sc, "common.reporting_subcode_hrchy") %>%
+      select(subcode = SUBCODE, company = COMPANY),
+    by = "subcode"
+  ) %>%
+  compute("cc_perf") #
 
-perf_exits <- cards_Q32024_update %>% # ⚠️ CHANGED
+perf_dedup <- cc_perf %>%
+  group_by(party_id, acct_id) %>%
+  dbplyr::window_order(party_id, acct_id, desc(eff_dte), data_date) %>%
+  mutate(rn = row_number()) %>%
+  filter(rn == 1) %>%
+  ungroup() %>%
+  select(-rn) %>%
+  compute("perf_dedup") #
+
+perf_icl <- cc_perf %>%
+  filter(! is.na(credit_line)) %>%
+  group_by(party_id, acct_id) %>%
+  dbplyr::window_order(party_id, acct_id, eff_dte, data_date) %>%
+  mutate(rn = row_number()) %>%
+  filter(rn == 1) %>%
+  ungroup() %>%
+  select(party_id, acct_id, initial_credit_limit = credit_line) %>%
+  compute("perf_icl")
+
+new_card_perf <- left_join(
+  perf_dedup,
+  perf_icl,
+  by = c("party_id", "acct_id")
+) %>%
+  compute("new_card_perf")
+
+perf_exits <- new_card_perf %>%
   naPerf(usehist = FALSE) %>%
   ungroup() %>%
   compute("perf_exits")
 
 data_perf_join <- left_join(
-  cards_Q32024_update, # ⚠️ CHANGED
+  new_card_perf,
   perf_exits,
   by = c("party_id", "acct_id")) %>%
-  compute("data_perf_join")
+  compute("data_perf_join") #
 
-chgoff <- cards_Q32024_update %>% # ⚠️ CHANGED
+chgoff <- new_card_perf %>%
   naCO_tr() %>%
   ungroup() %>%
   compute("chgoff")
 
-Q3_2024_updated <- left_join(data_perf_join, # ⚠️ CHANGED
-                              chgoff,
-                              by = c("party_id", "acct_id")) %>%
-  compute("Q3_2024_updated") # ⚠️ CHANGED
+Q1_2025 <- left_join(data_perf_join, # ⚠️ CHANGED
+                     chgoff,
+                     by = c("party_id", "acct_id")) %>%
+  compute("Q1_2025") # ⚠️ CHANGED
 
-dbGetQuery(sc, "create table bu_fs.hpusarl_Q3_2024_12m select * from Q3_2024_updated") # ⚠️ CHANGED
-
-rm(cards_Q32024, cards_Q32024_update, Q3_2024_updated, # ⚠️ CHANGED
-   chgoff, data_perf_join, perf_exits)
-gc()
+dbGetQuery(sc, "create table bu_fs.hpusarl_Q1_2025 select * from Q1_2025") # ⚠️ CHANGED
 
 ################################################################################
-############################# Read Back Tables #################################
+########################## Performances & Metrics #############################
 ################################################################################
 
-# Reading the table with updated performance
-cards_Q32024 <- tbl(sc, "bu_fs.hpusarl_Q3_2024_12m") %>% # ⚠️ CHANGED
-  filter(year == "2024") # ⚠️ CHANGED
+# Read table back
+cards_2025 <- tbl(sc, "bu_fs.hpusarl_Q1_2025") # ⚠️ CHANGED
 
 # Vantage 4.0
 vtg4 <- tbl(sc, "common.scrattr_evtg04") %>%
   select(party_id, finscore, data_date) %>%
   rename(vtg4 = finscore)
 
-################################################################################
-########################## Performances & Metrics #############################
-################################################################################
-
-# Cards Q3 2024 - 12M # ⚠️ CHANGED
-driver_Q32024_vtg <- cards_Q32024 %>% # ⚠️ CHANGED
+# 2025 Q1 # ⚠️ CHANGED
+driver_2025_vtg <- cards_2025 %>% # ⚠️ CHANGED
   filter(!acct_typ_cde == "SC") %>%
   mutate(company = case_when(
-    company == "LENDUP" ~ "MISSION LANE",
-    subcode == "B22EL016" ~ "GENESIS FINANCIAL SOLUTIONS",
-    TRUE ~ company
+    company == "LENDUP"       ~ "MISSION LANE",
+    subcode == "B22EL016"     ~ "GENESIS FINANCIAL SOLUTIONS",
+    TRUE                      ~ company
   ),
   archive_dte = case_when(
     month(open_dte) %in% c(1,2,3)    ~ paste0(as.character(year(open_dte)-1L), '-12-31'),
@@ -110,57 +178,78 @@ driver_Q32024_vtg <- cards_Q32024 %>% # ⚠️ CHANGED
     TRUE                       ~ '6. UNSCOREABLE'
   )) %>%
   mutate(
-    BGI_60_12 = case_when( # ⚠️ CHANGED
+    BGI_60_6 = case_when(
       na30 <= 0 | na60 <= 0 ~ -1L,
-      na60 <= 12            ~ 0L, # ⚠️ CHANGED
-      na30 <= 12            ~ 2L, # ⚠️ CHANGED
+      na60 <= 6             ~ 0L,
+      na30 <= 6             ~ 2L,
       TRUE                  ~ 1L
     ),
-    BGI_90_12 = case_when( # ⚠️ CHANGED
+    BGI_60_12 = case_when(
+      na30 <= 0 | na60 <= 0 ~ -1L,
+      na60 <= 12            ~ 0L,
+      na30 <= 12            ~ 2L,
+      TRUE                  ~ 1L
+    ),
+    BGI_90_6 = case_when(
       na30 <= 0 | na60 <= 0 | na90 <= 0 ~ -1L,
-      na90 <= 12                         ~ 0L, # ⚠️ CHANGED
-      na60 <= 12                         ~ 2L, # ⚠️ CHANGED
+      na90 <= 6                          ~ 0L,
+      na60 <= 6                          ~ 2L,
       TRUE                               ~ 1L
     ),
-    CO_12 = case_when(naCO <= 12 ~ 0L, TRUE ~ 1L) # ⚠️ CHANGED
+    BGI_90_12 = case_when(
+      na30 <= 0 | na60 <= 0 | na90 <= 0 ~ -1L,
+      na90 <= 12                         ~ 0L,
+      na60 <= 12                         ~ 2L,
+      TRUE                               ~ 1L
+    ),
+    CO_6  = case_when(naCO <= 6  ~ 0L, TRUE ~ 1L),
+    CO_12 = case_when(naCO <= 12 ~ 0L, TRUE ~ 1L)
   ) %>%
-  compute("driver_Q32024_vtg") # ⚠️ CHANGED
+  filter(BGI_90_12 >= 0) %>%
+  compute("driver_2025_vtg") # ⚠️ CHANGED
 
-cards_Q32024_Company <- driver_Q32024_vtg %>% # ⚠️ CHANGED
+cards_2025_Company <- driver_2025_vtg %>% # ⚠️ CHANGED
   group_by(company) %>%
   summarise(
-    bad60in12 = sum(case_when(BGI_60_12 == 0 ~ 1L, TRUE ~ 0L), # ⚠️ CHANGED
-                    na.rm = TRUE) /
-      sum(case_when(BGI_60_12 %in% c(0, 1) ~ 1L, TRUE ~ 0L),
-          na.rm = TRUE),
-    bad90in12 = sum(case_when(BGI_90_12 == 0 ~ 1L, TRUE ~ 0L), # ⚠️ CHANGED
-                    na.rm = TRUE) /
-      sum(case_when(BGI_90_12 %in% c(0, 1) ~ 1L, TRUE ~ 0L),
-          na.rm = TRUE),
-    COin12 = sum(case_when(CO_12 == 0 ~ 1L, TRUE ~ 0L), na.rm = TRUE) / # ⚠️ CHANGED
-      sum(case_when(CO_12 %in% c(0,1) ~ 1L, TRUE ~ 0L), na.rm = TRUE)
+    cards       = n(),
+    median_vtg4 = percentile(vtg4, 0.5),
+    median_icl  = percentile(initial_credit_limit, 0.5),
+    bad60in6    = sum(case_when(BGI_60_6  == 0 ~ 1L, TRUE ~ 0L), na.rm = TRUE) /
+                  sum(case_when(BGI_60_6  %in% c(0, 1) ~ 1L, TRUE ~ 0L), na.rm = TRUE),
+    bad60in12   = sum(case_when(BGI_60_12 == 0 ~ 1L, TRUE ~ 0L), na.rm = TRUE) /
+                  sum(case_when(BGI_60_12 %in% c(0, 1) ~ 1L, TRUE ~ 0L), na.rm = TRUE),
+    bad90in6    = sum(case_when(BGI_90_6  == 0 ~ 1L, TRUE ~ 0L), na.rm = TRUE) /
+                  sum(case_when(BGI_90_6  %in% c(0, 1) ~ 1L, TRUE ~ 0L), na.rm = TRUE),
+    bad90in12   = sum(case_when(BGI_90_12 == 0 ~ 1L, TRUE ~ 0L), na.rm = TRUE) /
+                  sum(case_when(BGI_90_12 %in% c(0, 1) ~ 1L, TRUE ~ 0L), na.rm = TRUE),
+    COin6       = sum(case_when(CO_6  == 0 ~ 1L, TRUE ~ 0L), na.rm = TRUE) /
+                  sum(case_when(CO_6  %in% c(0,1) ~ 1L, TRUE ~ 0L), na.rm = TRUE),
+    COin12      = sum(case_when(CO_12 == 0 ~ 1L, TRUE ~ 0L), na.rm = TRUE) /
+                  sum(case_when(CO_12 %in% c(0,1) ~ 1L, TRUE ~ 0L), na.rm = TRUE)
   ) %>%
-  collect()
+  collect() %>%
+  arrange(desc(cards))
 
-write_csv(cards_Q32024_Company, "/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh/Data/Q3_bad_COrates_2024_12m.csv") # ⚠️ CHANGED
+write_csv(cards_2025_Company, "/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh/Data/Q1_bad_COrates_2025.csv") # ⚠️ CHANGED
 
 ################################################################################
 ####################### Abs & Rel Change in Bad Rate ##########################
 ################################################################################
 
-# Q3 2024 - 12M # ⚠️ CHANGED
-cards_Q32024_Company <- read_csv("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh/Data/Q3_bad_COrates_2024_12m.csv") # ⚠️ CHANGED
+# Read Q1 2025 # ⚠️ CHANGED
+cards_Q12025_Company <- read_csv("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh/Data/Q1_bad_COrates_2025.csv") # ⚠️ CHANGED
 
-# Q3 2023 - 12M for comparison # ⚠️ CHANGED
-cards_Q32023_Company <- read_csv("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/Vintage_Curves/Code/Refresh Requests/April 2025 Refresh/Data/Q3_bad_CORates_2023_updated.csv") %>% # ⚠️ CHANGED
-  select(company, bad60in12, bad90in12, COin12)
+# Read Q1 2024 for comparison # ⚠️ CHANGED
+cards_Q12024_Company <- read_csv("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/Vintage_Curves/Code/Refresh Requests/April 2025 Refresh/Data/Q1_bad_CORates_2024.csv") %>% # ⚠️ CHANGED
+  select(company, bad60in6, bad90in6, COin6,
+         bad60in12, bad90in12, COin12)
 
 # Side by Side Bad Rates
-cards_sbs <- cards_Q32023_Company %>% # ⚠️ CHANGED
+cards_sbs <- cards_Q12024_Company %>% # ⚠️ CHANGED
   inner_join(
-    cards_Q32024_Company, # ⚠️ CHANGED
+    cards_Q12025_Company, # ⚠️ CHANGED
     by = "company",
-    suffix = c("_2023", "_2024") # ⚠️ CHANGED
+    suffix = c("_2024", "_2025") # ⚠️ CHANGED
   ) %>%
   filter(company %in% c(
     "CAPITAL ONE", "SYNCHRONY", "CHASE", "CITIBANK", "CREDIT ONE BANK", "BANK OF AMERICA",
@@ -173,17 +262,23 @@ cards_sbs <- cards_Q32023_Company %>% # ⚠️ CHANGED
     "BECU (BOEING EMPLOYEES CREDIT UNION)"
   )) %>%
   mutate(
-    # 2023 vs 2024 - 60 - 12M # ⚠️ CHANGED
-    bad_change_abs_60_12_202324 = bad60in12_2024 - bad60in12_2023, # ⚠️ CHANGED
-    bad_change_rel_60_12_202324 = bad60in12_2024 / bad60in12_2023 - 1, # ⚠️ CHANGED
+    # 2024 vs 2025 - 60 # ⚠️ CHANGED
+    bad_change_abs_60_6_202425  = bad60in6_2025  - bad60in6_2024, # ⚠️ CHANGED
+    bad_change_rel_60_6_202425  = bad60in6_2025  / bad60in6_2024  - 1, # ⚠️ CHANGED
+    bad_change_abs_60_12_202425 = bad60in12_2025 - bad60in12_2024, # ⚠️ CHANGED
+    bad_change_rel_60_12_202425 = bad60in12_2025 / bad60in12_2024 - 1, # ⚠️ CHANGED
 
-    # 90 - 12M # ⚠️ CHANGED
-    bad_change_abs_90_12_202324 = bad90in12_2024 - bad90in12_2023, # ⚠️ CHANGED
-    bad_change_rel_90_12_202324 = bad90in12_2024 / bad90in12_2023 - 1, # ⚠️ CHANGED
+    # 90 # ⚠️ CHANGED
+    bad_change_abs_90_6_202425  = bad90in6_2025  - bad90in6_2024, # ⚠️ CHANGED
+    bad_change_rel_90_6_202425  = bad90in6_2025  / bad90in6_2024  - 1, # ⚠️ CHANGED
+    bad_change_abs_90_12_202425 = bad90in12_2025 - bad90in12_2024, # ⚠️ CHANGED
+    bad_change_rel_90_12_202425 = bad90in12_2025 / bad90in12_2024 - 1, # ⚠️ CHANGED
 
-    # CO - 12M # ⚠️ CHANGED
-    bad_change_abs_CO_12_202324 = COin12_2024 - COin12_2023, # ⚠️ CHANGED
-    bad_change_rel_CO_12_202324 = COin12_2024 / COin12_2023 - 1 # ⚠️ CHANGED
+    # CO # ⚠️ CHANGED
+    bad_change_abs_CO_6_202425  = COin6_2025  - COin6_2024, # ⚠️ CHANGED
+    bad_change_rel_CO_6_202425  = COin6_2025  / COin6_2024  - 1, # ⚠️ CHANGED
+    bad_change_abs_CO_12_202425 = COin12_2025 - COin12_2024, # ⚠️ CHANGED
+    bad_change_rel_CO_12_202425 = COin12_2025 / COin12_2024 - 1 # ⚠️ CHANGED
   )
 
-write_csv(cards_sbs, "/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh/Data/Q32024_12MPerf.csv") # ⚠️ CHANGED
+write_csv(cards_sbs, "/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh/Data/Q12025_6_12MPerf.csv") # ⚠️ CHANGED
