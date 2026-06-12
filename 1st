@@ -210,17 +210,17 @@ cards_2025_Company <- driver_2025_vtg %>%
   ) %>%
   collect()
 
-write_csv(cards_2025_Company, "/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh/Data/Q3_bad_COrates_2025.csv")
+write_csv(cards_2025_Company, "/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh/data/Q3_bad_COrates_2025.csv")
 
 ################################################################################
 ####################### Abs & Rel Change in Bad Rate ##########################
 ################################################################################
 
 # Read Q3 2025
-cards_Q32025_Company <- read_csv("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh/Data/Q3_bad_COrates_2025.csv")
+cards_Q32025_Company <- read_csv("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh/data/Q3_bad_COrates_2025.csv")
 
 # Read Q3 2024 for comparison
-cards_Q32024_Company <- read_csv("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh/Data/Q3_bad_COrates_2024_12m.csv") %>%
+cards_Q32024_Company <- read_csv("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/Vintage_Curves/Code/Refresh Requests/April 2025 Refresh/Data/Q3_bad_CORates_2024.csv") %>%
   select(company, bad60in6, bad90in6, COin6)
 
 # Side by Side Bad Rates
@@ -254,4 +254,4 @@ cards_sbs <- cards_Q32024_Company %>%
     bad_change_rel_CO_6_202425 = COin6_2025 / COin6_2024 - 1
   )
 
-write_csv(cards_sbs, "/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh/Data/Q32025_6MPerf.csv")
+write_csv(cards_sbs, "/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh/data/Q32025_6MPerf.csv")
