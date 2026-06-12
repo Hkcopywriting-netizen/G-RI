@@ -1,4 +1,189 @@
-file.copy(
-  from = "/shared/nas/bu/fs/persist/Custom/USBank/Prescreens/202509_PL_Prescreen_22/H1-TradeFilters.R",
-  to = "H1-TradeFilters.R"
-)
+################################################################################
+###################### Libraries / Spark / Directory ##########################
+################################################################################
+
+library(fst)
+library(TUISG)
+library(titanng)
+library(DT)
+library(arrow)
+library(xgboost)
+library(tidyverse)
+library(DBI)
+library(sparklyr)
+library(perfExits)
+library(filtr)
+
+options(scipen = 999)
+setwd("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh")
+
+sc <- spark_connect(master = "yarn")
+
+################################################################################
+############################ Read 2024 Driver ################################# # ⚠️ CHANGED
+################################################################################
+
+# We are reading previously created 2024 drivers to append their performance
+# using the latest archive available. Basically,
+# For Q2 2024 - 12 month performance (previously had only 6m) # ⚠️ CHANGED
+
+cards_Q22024 <- tbl(sc, "bu_fs.shrajpu_q2_2024") %>% # ⚠️ CHANGED
+  filter(year == "2024") # ⚠️ CHANGED
+
+################################################################################
+########################### New Performance - 12M ##############################
+################################################################################
+
+# Q2 2024 # ⚠️ CHANGED
+cards_Q22024_update <- cards_Q22024 %>% # ⚠️ CHANGED
+  select(party_id, acct_id, year, company, subcode) %>%
+  left_join(tbl(sc, "bc3.trades") %>%
+              filter(data_date == "2025-06-30"), # ⚠️ CHANGED
+            by = c("party_id", "acct_id")) %>%
+  compute("cards_Q22024_update") # ⚠️ CHANGED
+
+perf_exits <- cards_Q22024_update %>% # ⚠️ CHANGED
+  naPerf(usehist = FALSE) %>%
+  ungroup() %>%
+  compute("perf_exits")
+
+data_perf_join <- left_join(
+  cards_Q22024_update, # ⚠️ CHANGED
+  perf_exits,
+  by = c("party_id", "acct_id")) %>%
+  compute("data_perf_join")
+
+chgoff <- cards_Q22024_update %>% # ⚠️ CHANGED
+  naCO_tr() %>%
+  ungroup() %>%
+  compute("chgoff")
+
+Q2_2024_updated <- left_join(data_perf_join, # ⚠️ CHANGED
+                              chgoff,
+                              by = c("party_id", "acct_id")) %>%
+  compute("Q2_2024_updated") # ⚠️ CHANGED
+
+dbGetQuery(sc, "create table bu_fs.hpusarl_Q2_2024_12m select * from Q2_2024_updated") # ⚠️ CHANGED
+
+rm(cards_Q22024, cards_Q22024_update, Q2_2024_updated, # ⚠️ CHANGED
+   chgoff, data_perf_join, perf_exits)
+gc()
+
+################################################################################
+############################# Read Back Tables #################################
+################################################################################
+
+# Reading the table with updated performance
+cards_Q22024 <- tbl(sc, "bu_fs.hpusarl_Q2_2024_12m") %>% # ⚠️ CHANGED
+  filter(year == "2024") # ⚠️ CHANGED
+
+# Vantage 4.0
+vtg4 <- tbl(sc, "common.scrattr_evtg04") %>%
+  select(party_id, finscore, data_date) %>%
+  rename(vtg4 = finscore)
+
+################################################################################
+########################## Performances & Metrics #############################
+################################################################################
+
+# Cards Q2 2024 - 12M # ⚠️ CHANGED
+driver_Q22024_vtg <- cards_Q22024 %>% # ⚠️ CHANGED
+  filter(!acct_typ_cde == "SC") %>%
+  mutate(company = case_when(
+    company == "LENDUP" ~ "MISSION LANE",
+    subcode == "B22EL016" ~ "GENESIS FINANCIAL SOLUTIONS",
+    TRUE ~ company
+  ),
+  archive_dte = case_when(
+    month(open_dte) %in% c(1,2,3)    ~ paste0(as.character(year(open_dte)-1L), '-12-31'),
+    month(open_dte) %in% c(4,5,6)    ~ paste0(as.character(year(open_dte)), '-03-31'),
+    month(open_dte) %in% c(7,8,9)    ~ paste0(as.character(year(open_dte)), '-06-30'),
+    month(open_dte) %in% c(10,11,12) ~ paste0(as.character(year(open_dte)), '-09-30')
+  )) %>%
+  left_join(vtg4, by = c("party_id", "archive_dte" = "data_date")) %>%
+  mutate(vtg4Tier = case_when(
+    vtg4 >= 300 & vtg4 <= 600 ~ '1. SUBPRIME',
+    vtg4 > 600  & vtg4 <= 660 ~ '2. NEAR PRIME',
+    vtg4 > 660  & vtg4 <= 720 ~ '3. PRIME',
+    vtg4 > 720  & vtg4 <= 780 ~ '4. PRIME PLUS',
+    vtg4 > 780                 ~ '5. SUPER PRIME',
+    TRUE                       ~ '6. UNSCOREABLE'
+  )) %>%
+  mutate(
+    BGI_60_12 = case_when( # ⚠️ CHANGED
+      na30 <= 0 | na60 <= 0 ~ -1L,
+      na60 <= 12            ~ 0L, # ⚠️ CHANGED
+      na30 <= 12            ~ 2L, # ⚠️ CHANGED
+      TRUE                  ~ 1L
+    ),
+    BGI_90_12 = case_when( # ⚠️ CHANGED
+      na30 <= 0 | na60 <= 0 | na90 <= 0 ~ -1L,
+      na90 <= 12                         ~ 0L, # ⚠️ CHANGED
+      na60 <= 12                         ~ 2L, # ⚠️ CHANGED
+      TRUE                               ~ 1L
+    ),
+    CO_12 = case_when(naCO <= 12 ~ 0L, TRUE ~ 1L) # ⚠️ CHANGED
+  ) %>%
+  compute("driver_Q22024_vtg") # ⚠️ CHANGED
+
+cards_Q22024_Company <- driver_Q22024_vtg %>% # ⚠️ CHANGED
+  group_by(company) %>%
+  summarise(
+    bad60in12 = sum(case_when(BGI_60_12 == 0 ~ 1L, TRUE ~ 0L), # ⚠️ CHANGED
+                    na.rm = TRUE) /
+      sum(case_when(BGI_60_12 %in% c(0, 1) ~ 1L, TRUE ~ 0L),
+          na.rm = TRUE),
+    bad90in12 = sum(case_when(BGI_90_12 == 0 ~ 1L, TRUE ~ 0L), # ⚠️ CHANGED
+                    na.rm = TRUE) /
+      sum(case_when(BGI_90_12 %in% c(0, 1) ~ 1L, TRUE ~ 0L),
+          na.rm = TRUE),
+    COin12 = sum(case_when(CO_12 == 0 ~ 1L, TRUE ~ 0L), na.rm = TRUE) / # ⚠️ CHANGED
+      sum(case_when(CO_12 %in% c(0,1) ~ 1L, TRUE ~ 0L), na.rm = TRUE)
+  ) %>%
+  collect()
+
+write_csv(cards_Q22024_Company, "/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh/Data/Q2_bad_COrates_2024_12m.csv") # ⚠️ CHANGED
+
+################################################################################
+####################### Abs & Rel Change in Bad Rate ##########################
+################################################################################
+
+# Q2 2024 - 12M # ⚠️ CHANGED
+cards_Q22024_Company <- read_csv("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh/Data/Q2_bad_COrates_2024_12m.csv") # ⚠️ CHANGED
+
+# Q2 2023 - 12M for comparison # ⚠️ CHANGED
+cards_Q22023_Company <- read_csv("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/July 2024 Refresh/Data/Q2_bad_CORates_2023.csv") %>% # ⚠️ CHANGED
+  select(company, bad60in12, bad90in12, COin12)
+
+# Side by Side Bad Rates
+cards_sbs <- cards_Q22023_Company %>% # ⚠️ CHANGED
+  inner_join(
+    cards_Q22024_Company, # ⚠️ CHANGED
+    by = "company",
+    suffix = c("_2023", "_2024") # ⚠️ CHANGED
+  ) %>%
+  filter(company %in% c(
+    "CAPITAL ONE", "SYNCHRONY", "CHASE", "CITIBANK", "CREDIT ONE BANK", "BANK OF AMERICA",
+    "DISCOVER", "AMERICAN EXPRESS", "GOLDMAN SACHS", "BARCLAYS", "WELLS FARGO", "ALLIANCE DATA",
+    "GENESIS FINANCIAL SOLUTIONS", "US BANK", "FIRST PREMIER", "MISSION LANE", "FIRST NATIONAL BANK OF OMAHA (FNBO)",
+    "ATLANTICUS HOLDINGS", "NAVY FEDERAL CREDIT UNION", "CONTINENTAL FINANCE COMPANY", "MERRICK BANK", "PNC",
+    "FIRST BANK & TRUST (SD)", "FIRST NATIONAL BANK/FIRST SAVINGS BANK (SD)", "USAA", "TRUIST FINANCIAL CORP (FKA BB&T/SUNTRUST)",
+    "CITIZENS BANK", "BMO FINANCIAL GROUP", "TD BANK (NORDSTROM)", "TD BANK", "FIRST NATIONAL CREDIT CARD", "PENTAGON FEDERAL CREDIT UNION (PENFED)",
+    "VERVENT", "AVANT", "FIFTH THIRD", "PETAL", "HUNTINGTON NATIONAL BANK", "KEYBANK", "REGIONS BANK", "M&T BANK",
+    "BECU (BOEING EMPLOYEES CREDIT UNION)"
+  )) %>%
+  mutate(
+    # 2023 vs 2024 - 60 - 12M # ⚠️ CHANGED
+    bad_change_abs_60_12_202324 = bad60in12_2024 - bad60in12_2023, # ⚠️ CHANGED
+    bad_change_rel_60_12_202324 = bad60in12_2024 / bad60in12_2023 - 1, # ⚠️ CHANGED
+
+    # 90 - 12M # ⚠️ CHANGED
+    bad_change_abs_90_12_202324 = bad90in12_2024 - bad90in12_2023, # ⚠️ CHANGED
+    bad_change_rel_90_12_202324 = bad90in12_2024 / bad90in12_2023 - 1, # ⚠️ CHANGED
+
+    # CO - 12M # ⚠️ CHANGED
+    bad_change_abs_CO_12_202324 = COin12_2024 - COin12_2023, # ⚠️ CHANGED
+    bad_change_rel_CO_12_202324 = COin12_2024 / COin12_2023 - 1 # ⚠️ CHANGED
+  )
+
+write_csv(cards_sbs, "/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh/Data/Q22024_12MPerf.csv") # ⚠️ CHANGED
