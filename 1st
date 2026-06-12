@@ -1,17 +1,1 @@
-dbGetQuery(sc, "DROP TABLE IF EXISTS bu_fs.hpusarl_Q2_2025")
-
-
-
-dbGetQuery(sc, "DROP VIEW IF EXISTS Q2_2025")
-dbGetQuery(sc, "DROP VIEW IF EXISTS cc_perf")
-dbGetQuery(sc, "DROP VIEW IF EXISTS perf_dedup")
-dbGetQuery(sc, "DROP VIEW IF EXISTS perf_icl")
-dbGetQuery(sc, "DROP VIEW IF EXISTS new_card_perf")
-dbGetQuery(sc, "DROP VIEW IF EXISTS perf_exits")
-dbGetQuery(sc, "DROP VIEW IF EXISTS data_perf_join")
-dbGetQuery(sc, "DROP VIEW IF EXISTS chgoff")
-dbGetQuery(sc, "DROP VIEW IF EXISTS driver_2025_vtg")
-
-
-
-dbGetQuery(sc, "SHOW TABLES IN bu_fs LIKE '*Q2_2025*'")
+I'm running [filename].R via Source. It connected to Spark successfully — last console output was 'reusing existing Spark connection' — and has been silent since. No error shown, red stop sign still active. Wasn't sure if the silence was expected or if it's stuck at a specific step
