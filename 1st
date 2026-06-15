@@ -1,5 +1,13 @@
-library(readxl)
-excel_cols <- read_excel("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/Reports/Quarterly_DQCO_Report_March2025.xlsx",
-                         sheet = "Q1",
-                         n_max = 2)
-colnames(excel_cols)
+excel_q2 <- read_excel("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/Reports/Quarterly_DQCO_Report_March2025.xlsx",
+                       sheet = "Q2", n_max = 2)
+colnames(excel_q2)
+
+
+excel_q3 <- read_excel("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/Reports/Quarterly_DQCO_Report_March2025.xlsx",
+                       sheet = "Q3", n_max = 2)
+colnames(excel_q3)
+
+
+excel_q4 <- read_excel("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/Reports/Quarterly_DQCO_Report_March2025.xlsx",
+                       sheet = "Q4", n_max = 2)
+colnames(excel_q4)
