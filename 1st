@@ -1,1 +1,5 @@
-I'm running [filename].R via Source. It connected to Spark successfully — last console output was 'reusing existing Spark connection' — and has been silent since. No error shown, red stop sign still active. Wasn't sure if the silence was expected or if it's stuck at a specific step
+library(readxl)
+excel_cols <- read_excel("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/Reports/Quarterly_DQCO_Report_March2025.xlsx",
+                         sheet = "Q1",
+                         n_max = 2)
+colnames(excel_cols)
