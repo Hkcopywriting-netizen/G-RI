@@ -1,3 +1,3 @@
+library(openxlsx)
 openxlsx_check <- loadWorkbook(report_path)
-sheetNames(openxlsx_check)
-readWorkbook(openxlsx_check, sheet = "Q1", colNames = TRUE, rows = 1) %>% colnames() %>% .[50]
+names(openxlsx_check)
