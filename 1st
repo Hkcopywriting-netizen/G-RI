@@ -1,13 +1,402 @@
-excel_q2 <- read_excel("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/Reports/Quarterly_DQCO_Report_March2025.xlsx",
-                       sheet = "Q2", n_max = 2)
-colnames(excel_q2)
+################################################################################
+###################### Libraries / Directory ##################################
+################################################################################
 
+library(tidyverse)
+library(readxl)
+library(openxlsx)
 
-excel_q3 <- read_excel("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/Reports/Quarterly_DQCO_Report_March2025.xlsx",
-                       sheet = "Q3", n_max = 2)
-colnames(excel_q3)
+options(scipen = 999)
 
+################################################################################
+###################### File Paths #############################################
+################################################################################
 
-excel_q4 <- read_excel("/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/Reports/Quarterly_DQCO_Report_March2025.xlsx",
-                       sheet = "Q4", n_max = 2)
-colnames(excel_q4)
+# Input - existing report
+report_path <- "/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/Reports/Quarterly_DQCO_Report_March2025.xlsx"
+
+# Output - updated report
+output_path <- "/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/Reports/Quarterly_DQCO_Report_June2026.xlsx"
+
+# CSV folder
+csv_path <- "/shared/nas/shape/bu_fs/persist/Custom/Proactive-Card_Banking/DQCO/Refresh Requests/June 2026 Refresh/data/"
+
+################################################################################
+###################### 40 Companies Filter ####################################
+################################################################################
+
+companies_40 <- c(
+  "CAPITAL ONE", "SYNCHRONY", "CHASE", "CITIBANK", "CREDIT ONE BANK", "BANK OF AMERICA",
+  "DISCOVER", "AMERICAN EXPRESS", "GOLDMAN SACHS", "BARCLAYS", "WELLS FARGO", "ALLIANCE DATA",
+  "GENESIS FINANCIAL SOLUTIONS", "US BANK", "FIRST PREMIER", "MISSION LANE", "FIRST NATIONAL BANK OF OMAHA (FNBO)",
+  "ATLANTICUS HOLDINGS", "NAVY FEDERAL CREDIT UNION", "CONTINENTAL FINANCE COMPANY", "MERRICK BANK", "PNC",
+  "FIRST BANK & TRUST (SD)", "FIRST NATIONAL BANK/FIRST SAVINGS BANK (SD)", "USAA", "TRUIST FINANCIAL CORP (FKA BB&T/SUNTRUST)",
+  "CITIZENS BANK", "BMO FINANCIAL GROUP", "TD BANK (NORDSTROM)", "TD BANK", "FIRST NATIONAL CREDIT CARD", "PENTAGON FEDERAL CREDIT UNION (PENFED)",
+  "VERVENT", "AVANT", "FIFTH THIRD", "PETAL", "HUNTINGTON NATIONAL BANK", "KEYBANK", "REGIONS BANK", "M&T BANK",
+  "BECU (BOEING EMPLOYEES CREDIT UNION)"
+)
+
+################################################################################
+###################### Read Existing Excel Sheets #############################
+################################################################################
+
+q1_existing <- read_excel(report_path, sheet = "Q1")
+q2_existing <- read_excel(report_path, sheet = "Q2")
+q3_existing <- read_excel(report_path, sheet = "Q3")
+q4_existing <- read_excel(report_path, sheet = "Q4")
+
+################################################################################
+###################### Read New CSVs ##########################################
+################################################################################
+
+# Q3 2023 - 24m
+q3_2023_24m <- read_csv(paste0(csv_path, "Q3_bad_COrates_2023_24m.csv")) %>%
+  filter(company %in% companies_40) %>%
+  select(company, bad60in24, bad90in24, COin24)
+
+# Q4 2023 - 24m
+q4_2023_24m <- read_csv(paste0(csv_path, "Q4_bad_COrates_2023_24m.csv")) %>%
+  filter(company %in% companies_40) %>%
+  select(company, bad60in24, bad90in24, COin24)
+
+# Q2 2024 - 12m
+q2_2024_12m <- read_csv(paste0(csv_path, "Q2_bad_COrates_2024_12m.csv")) %>%
+  filter(company %in% companies_40) %>%
+  select(company, bad60in12, bad90in12, COin12)
+
+# Q3 2024 - 12m
+q3_2024_12m <- read_csv(paste0(csv_path, "Q3_bad_COrates_2024_12m.csv")) %>%
+  filter(company %in% companies_40) %>%
+  select(company, bad60in12, bad90in12, COin12)
+
+# Q1 2025 - 6m and 12m
+q1_2025 <- read_csv(paste0(csv_path, "Q1_bad_COrates_2025.csv")) %>%
+  filter(company %in% companies_40) %>%
+  select(company, cards, median_vtg4, median_icl,
+         bad60in6, bad60in12, bad90in6, bad90in12, COin6, COin12)
+
+# Q2 2025 - 6m
+q2_2025 <- read_csv(paste0(csv_path, "Q2_bad_COrates_2025.csv")) %>%
+  filter(company %in% companies_40) %>%
+  select(company, cards, median_vtg4, median_icl,
+         bad60in6, bad90in6, COin6)
+
+# Q3 2025 - 6m
+q3_2025 <- read_csv(paste0(csv_path, "Q3_bad_COrates_2025.csv")) %>%
+  filter(company %in% companies_40) %>%
+  select(company, cards, median_vtg4, median_icl,
+         bad60in6, bad90in6, COin6)
+
+################################################################################
+###################### Read Comparison CSVs ###################################
+################################################################################
+
+# Q3 2023 24m comparison vs Q3 2022
+q3_2023_perf <- read_csv(paste0(csv_path, "Q32023_24MPerf.csv")) %>%
+  filter(company %in% companies_40) %>%
+  select(company,
+         bad_change_abs_60_24_202223, bad_change_rel_60_24_202223,
+         bad_change_abs_90_24_202223, bad_change_rel_90_24_202223,
+         bad_change_abs_CO_24_202223, bad_change_rel_CO_24_202223)
+
+# Q4 2023 24m comparison vs Q4 2022
+q4_2023_perf <- read_csv(paste0(csv_path, "Q42023_24MPerf.csv")) %>%
+  filter(company %in% companies_40) %>%
+  select(company,
+         bad_change_abs_60_24_202223, bad_change_rel_60_24_202223,
+         bad_change_abs_90_24_202223, bad_change_rel_90_24_202223,
+         bad_change_abs_CO_24_202223, bad_change_rel_CO_24_202223)
+
+# Q2 2024 12m comparison vs Q2 2023
+q2_2024_perf <- read_csv(paste0(csv_path, "Q22024_12MPerf.csv")) %>%
+  filter(company %in% companies_40) %>%
+  select(company,
+         bad_change_abs_60_12_202324, bad_change_rel_60_12_202324,
+         bad_change_abs_90_12_202324, bad_change_rel_90_12_202324,
+         bad_change_abs_CO_12_202324, bad_change_rel_CO_12_202324)
+
+# Q3 2024 12m comparison vs Q3 2023
+q3_2024_perf <- read_csv(paste0(csv_path, "Q32024_12MPerf.csv")) %>%
+  filter(company %in% companies_40) %>%
+  select(company,
+         bad_change_abs_60_12_202324, bad_change_rel_60_12_202324,
+         bad_change_abs_90_12_202324, bad_change_rel_90_12_202324,
+         bad_change_abs_CO_12_202324, bad_change_rel_CO_12_202324)
+
+# Q1 2025 comparison vs Q1 2024
+q1_2025_perf <- read_csv(paste0(csv_path, "Q12025_6_12MPerf.csv")) %>%
+  filter(company %in% companies_40) %>%
+  select(company,
+         bad_change_abs_60_6_202425, bad_change_rel_60_6_202425,
+         bad_change_abs_60_12_202425, bad_change_rel_60_12_202425,
+         bad_change_abs_90_6_202425, bad_change_rel_90_6_202425,
+         bad_change_abs_90_12_202425, bad_change_rel_90_12_202425,
+         bad_change_abs_CO_6_202425, bad_change_rel_CO_6_202425,
+         bad_change_abs_CO_12_202425, bad_change_rel_CO_12_202425)
+
+# Q2 2025 comparison vs Q2 2024
+q2_2025_perf <- read_csv(paste0(csv_path, "Q22025_6MPerf.csv")) %>%
+  filter(company %in% companies_40) %>%
+  select(company,
+         bad_change_abs_60_6_202425, bad_change_rel_60_6_202425,
+         bad_change_abs_90_6_202425, bad_change_rel_90_6_202425,
+         bad_change_abs_CO_6_202425, bad_change_rel_CO_6_202425)
+
+# Q3 2025 comparison vs Q3 2024
+q3_2025_perf <- read_csv(paste0(csv_path, "Q32025_6MPerf.csv")) %>%
+  filter(company %in% companies_40) %>%
+  select(company,
+         bad_change_abs_60_6_202425, bad_change_rel_60_6_202425,
+         bad_change_abs_90_6_202425, bad_change_rel_90_6_202425,
+         bad_change_abs_CO_6_202425, bad_change_rel_CO_6_202425)
+
+################################################################################
+###################### Build Updated Q1 Sheet ################################
+################################################################################
+
+# Q1 existing has cols 1-128. We need to add Q1 2025 + 2024 vs 2025 comparison
+# Get cards from existing Q1 2024 for volume change calculation
+q1_existing_cards <- q1_existing %>%
+  select(Company,
+         cards_2024 = `Cards                    Q1 2024`)
+
+# Build Q1 2025 section joined with comparison
+q1_2025_full <- q1_existing %>%
+  select(Company) %>%
+  left_join(q1_2025, by = c("Company" = "company")) %>%
+  left_join(q1_existing_cards, by = "Company") %>%
+  mutate(cards_vol_change_2024_2025 = (cards - cards_2024) / cards_2024) %>%
+  left_join(q1_2025_perf, by = c("Company" = "company"))
+
+# Build final Q1 updated dataframe
+q1_updated <- q1_existing %>%
+  left_join(
+    q1_2025_full %>%
+      select(Company, cards, median_vtg4, median_icl,
+             bad60in6, bad60in12, bad90in6, bad90in12, COin6, COin12,
+             cards_vol_change_2024_2025,
+             bad_change_abs_60_6_202425, bad_change_rel_60_6_202425,
+             bad_change_abs_60_12_202425, bad_change_rel_60_12_202425,
+             bad_change_abs_90_6_202425, bad_change_rel_90_6_202425,
+             bad_change_abs_90_12_202425, bad_change_rel_90_12_202425,
+             bad_change_abs_CO_6_202425, bad_change_rel_CO_6_202425,
+             bad_change_abs_CO_12_202425, bad_change_rel_CO_12_202425),
+    by = "Company"
+  )
+
+# Rename new columns to match Excel naming convention
+q1_updated <- q1_updated %>%
+  rename(
+    `Cards Q1 2025`                              = cards,
+    `Median VTG4 Q1 2025`                        = median_vtg4,
+    `Median ICL Q1 2025`                         = median_icl,
+    `Bad60 in 6m Q1 2025`                        = bad60in6,
+    `Bad60 in 12m Q1 2025`                       = bad60in12,
+    `Bad90 in 6m Q1 2025`                        = bad90in6,
+    `Bad90 in 12m Q1 2025`                       = bad90in12,
+    `CO in 6m Q1 2025`                           = COin6,
+    `CO in 12m Q1 2025`                          = COin12,
+    `Cards Volume Change 2024 vs 2025`           = cards_vol_change_2024_2025,
+    `Bad Change Abs 60 in 6m 2024 vs 2025`      = bad_change_abs_60_6_202425,
+    `Bad Change Rel 60 in 6m 2024 vs 2025`      = bad_change_rel_60_6_202425,
+    `Bad Change Abs 60 in 12m 2024 vs 2025`     = bad_change_abs_60_12_202425,
+    `Bad Change Rel 60 in 12m 2024 vs 2025`     = bad_change_rel_60_12_202425,
+    `Bad Change Abs 90 in 6m 2024 vs 2025`      = bad_change_abs_90_6_202425,
+    `Bad Change Rel 90 in 6m 2024 vs 2025`      = bad_change_rel_90_6_202425,
+    `Bad Change Abs 90 in 12m 2024 vs 2025`     = bad_change_abs_90_12_202425,
+    `Bad Change Rel 90 in 12m 2024 vs 2025`     = bad_change_rel_90_12_202425,
+    `Bad Change Abs CO in 6m 2024 vs 2025`      = bad_change_abs_CO_6_202425,
+    `Bad Change Rel CO in 6m 2024 vs 2025`      = bad_change_rel_CO_6_202425,
+    `Bad Change Abs CO in 12m 2024 vs 2025`     = bad_change_abs_CO_12_202425,
+    `Bad Change Rel CO in 12m 2024 vs 2025`     = bad_change_rel_CO_12_202425
+  )
+
+################################################################################
+###################### Build Updated Q2 Sheet ################################
+################################################################################
+
+# Q2 needs: 2024 12m columns + 2025 6m + comparison
+# Get cards from existing Q2 2024 for volume change
+q2_existing_cards <- q2_existing %>%
+  select(Company,
+         cards_2024 = `Cards                    Q2 2024`)
+
+q2_2025_full <- q2_existing %>%
+  select(Company) %>%
+  left_join(q2_2025, by = c("Company" = "company")) %>%
+  left_join(q2_existing_cards, by = "Company") %>%
+  mutate(cards_vol_change_2024_2025 = (cards - cards_2024) / cards_2024) %>%
+  left_join(q2_2025_perf, by = c("Company" = "company"))
+
+q2_updated <- q2_existing %>%
+  left_join(
+    q2_2024_12m %>% rename(
+      `Bad60 in 12m Q2 2024` = bad60in12,
+      `Bad90 in 12m Q2 2024` = bad90in12,
+      `CO in 12m Q2 2024`    = COin12
+    ),
+    by = c("Company" = "company")
+  ) %>%
+  left_join(
+    q2_2024_perf %>% rename(
+      `Bad Change Abs 60 in 12m 2023 vs 2024` = bad_change_abs_60_12_202324,
+      `Bad Change Rel 60 in 12m 2023 vs 2024` = bad_change_rel_60_12_202324,
+      `Bad Change Abs 90 in 12m 2023 vs 2024` = bad_change_abs_90_12_202324,
+      `Bad Change Rel 90 in 12m 2023 vs 2024` = bad_change_rel_90_12_202324,
+      `Bad Change Abs CO in 12m 2023 vs 2024` = bad_change_abs_CO_12_202324,
+      `Bad Change Rel CO in 12m 2023 vs 2024` = bad_change_rel_CO_12_202324
+    ),
+    by = c("Company" = "company")
+  ) %>%
+  left_join(
+    q2_2025_full %>% select(
+      Company, cards, median_vtg4, median_icl,
+      bad60in6, bad90in6, COin6,
+      cards_vol_change_2024_2025,
+      bad_change_abs_60_6_202425, bad_change_rel_60_6_202425,
+      bad_change_abs_90_6_202425, bad_change_rel_90_6_202425,
+      bad_change_abs_CO_6_202425, bad_change_rel_CO_6_202425
+    ) %>% rename(
+      `Cards Q2 2025`                         = cards,
+      `Median VTG4 Q2 2025`                   = median_vtg4,
+      `Median ICL Q2 2025`                    = median_icl,
+      `Bad60 in 6m Q2 2025`                   = bad60in6,
+      `Bad90 in 6m Q2 2025`                   = bad90in6,
+      `CO in 6m Q2 2025`                      = COin6,
+      `Cards Volume Change 2024 vs 2025`      = cards_vol_change_2024_2025,
+      `Bad Change Abs 60 in 6m 2024 vs 2025`  = bad_change_abs_60_6_202425,
+      `Bad Change Rel 60 in 6m 2024 vs 2025`  = bad_change_rel_60_6_202425,
+      `Bad Change Abs 90 in 6m 2024 vs 2025`  = bad_change_abs_90_6_202425,
+      `Bad Change Rel 90 in 6m 2024 vs 2025`  = bad_change_rel_90_6_202425,
+      `Bad Change Abs CO in 6m 2024 vs 2025`  = bad_change_abs_CO_6_202425,
+      `Bad Change Rel CO in 6m 2024 vs 2025`  = bad_change_rel_CO_6_202425
+    ),
+    by = "Company"
+  )
+
+################################################################################
+###################### Build Updated Q3 Sheet ################################
+################################################################################
+
+# Q3 needs: 2023 24m + 2024 12m + 2025 6m + comparisons
+q3_existing_cards <- q3_existing %>%
+  select(Company,
+         cards_2024 = `Cards                    Q3 2024`)
+
+q3_2025_full <- q3_existing %>%
+  select(Company) %>%
+  left_join(q3_2025, by = c("Company" = "company")) %>%
+  left_join(q3_existing_cards, by = "Company") %>%
+  mutate(cards_vol_change_2024_2025 = (cards - cards_2024) / cards_2024) %>%
+  left_join(q3_2025_perf, by = c("Company" = "company"))
+
+q3_updated <- q3_existing %>%
+  left_join(
+    q3_2023_24m %>% rename(
+      `Bad60 in 24m Q3 2023` = bad60in24,
+      `Bad90 in 24m Q3 2023` = bad90in24,
+      `CO in 24m Q3 2023`    = COin24
+    ),
+    by = c("Company" = "company")
+  ) %>%
+  left_join(
+    q3_2023_perf %>% rename(
+      `Bad Change Abs 60 in 24m 2022 vs 2023` = bad_change_abs_60_24_202223,
+      `Bad Change Rel 60 in 24m 2022 vs 2023` = bad_change_rel_60_24_202223,
+      `Bad Change Abs 90 in 24m 2022 vs 2023` = bad_change_abs_90_24_202223,
+      `Bad Change Rel 90 in 24m 2022 vs 2023` = bad_change_rel_90_24_202223,
+      `Bad Change Abs CO in 24m 2022 vs 2023` = bad_change_abs_CO_24_202223,
+      `Bad Change Rel CO in 24m 2022 vs 2023` = bad_change_rel_CO_24_202223
+    ),
+    by = c("Company" = "company")
+  ) %>%
+  left_join(
+    q3_2024_12m %>% rename(
+      `Bad60 in 12m Q3 2024` = bad60in12,
+      `Bad90 in 12m Q3 2024` = bad90in12,
+      `CO in 12m Q3 2024`    = COin12
+    ),
+    by = c("Company" = "company")
+  ) %>%
+  left_join(
+    q3_2024_perf %>% rename(
+      `Bad Change Abs 60 in 12m 2023 vs 2024` = bad_change_abs_60_12_202324,
+      `Bad Change Rel 60 in 12m 2023 vs 2024` = bad_change_rel_60_12_202324,
+      `Bad Change Abs 90 in 12m 2023 vs 2024` = bad_change_abs_90_12_202324,
+      `Bad Change Rel 90 in 12m 2023 vs 2024` = bad_change_rel_90_12_202324,
+      `Bad Change Abs CO in 12m 2023 vs 2024` = bad_change_abs_CO_12_202324,
+      `Bad Change Rel CO in 12m 2023 vs 2024` = bad_change_rel_CO_12_202324
+    ),
+    by = c("Company" = "company")
+  ) %>%
+  left_join(
+    q3_2025_full %>% select(
+      Company, cards, median_vtg4, median_icl,
+      bad60in6, bad90in6, COin6,
+      cards_vol_change_2024_2025,
+      bad_change_abs_60_6_202425, bad_change_rel_60_6_202425,
+      bad_change_abs_90_6_202425, bad_change_rel_90_6_202425,
+      bad_change_abs_CO_6_202425, bad_change_rel_CO_6_202425
+    ) %>% rename(
+      `Cards Q3 2025`                         = cards,
+      `Median VTG4 Q3 2025`                   = median_vtg4,
+      `Median ICL Q3 2025`                    = median_icl,
+      `Bad60 in 6m Q3 2025`                   = bad60in6,
+      `Bad90 in 6m Q3 2025`                   = bad90in6,
+      `CO in 6m Q3 2025`                      = COin6,
+      `Cards Volume Change 2024 vs 2025`      = cards_vol_change_2024_2025,
+      `Bad Change Abs 60 in 6m 2024 vs 2025`  = bad_change_abs_60_6_202425,
+      `Bad Change Rel 60 in 6m 2024 vs 2025`  = bad_change_rel_60_6_202425,
+      `Bad Change Abs 90 in 6m 2024 vs 2025`  = bad_change_abs_90_6_202425,
+      `Bad Change Rel 90 in 6m 2024 vs 2025`  = bad_change_rel_90_6_202425,
+      `Bad Change Abs CO in 6m 2024 vs 2025`  = bad_change_abs_CO_6_202425,
+      `Bad Change Rel CO in 6m 2024 vs 2025`  = bad_change_rel_CO_6_202425
+    ),
+    by = "Company"
+  )
+
+################################################################################
+###################### Build Updated Q4 Sheet ################################
+################################################################################
+
+# Q4 needs: 2023 24m only (no 2024, no 2025 in scope)
+q4_updated <- q4_existing %>%
+  left_join(
+    q4_2023_24m %>% rename(
+      `Bad60 in 24m Q4 2023` = bad60in24,
+      `Bad90 in 24m Q4 2023` = bad90in24,
+      `CO in 24m Q4 2023`    = COin24
+    ),
+    by = c("Company" = "company")
+  ) %>%
+  left_join(
+    q4_2023_perf %>% rename(
+      `Bad Change Abs 60 in 24m 2022 vs 2023` = bad_change_abs_60_24_202223,
+      `Bad Change Rel 60 in 24m 2022 vs 2023` = bad_change_rel_60_24_202223,
+      `Bad Change Abs 90 in 24m 2022 vs 2023` = bad_change_abs_90_24_202223,
+      `Bad Change Rel 90 in 24m 2022 vs 2023` = bad_change_rel_90_24_202223,
+      `Bad Change Abs CO in 24m 2022 vs 2023` = bad_change_abs_CO_24_202223,
+      `Bad Change Rel CO in 24m 2022 vs 2023` = bad_change_rel_CO_24_202223
+    ),
+    by = c("Company" = "company")
+  )
+
+################################################################################
+###################### Write Output Excel File ################################
+################################################################################
+
+wb <- createWorkbook()
+
+addWorksheet(wb, "Q1")
+addWorksheet(wb, "Q2")
+addWorksheet(wb, "Q3")
+addWorksheet(wb, "Q4")
+
+writeData(wb, sheet = "Q1", x = q1_updated)
+writeData(wb, sheet = "Q2", x = q2_updated)
+writeData(wb, sheet = "Q3", x = q3_updated)
+writeData(wb, sheet = "Q4", x = q4_updated)
+
+saveWorkbook(wb, output_path, overwrite = TRUE)
+
+cat("Done! File saved to:", output_path, "\n")
