@@ -1,17 +1,30 @@
-The Quarterly DQCO Report has been updated and is attached. All updates use the April 2026 archive.
+total %>%
+    mutate(control = if_else(Filtered_control == "Mailed", "Mailed", "Full Control")) %>%
+    mutate(usbplOpen = if_else(lender == "USB", plOpen, 0)) %>%
+    mutate(offUsbOpen = if_else(lender != "USB", plOpen, 0)) %>%
+    group_by(control) %>%
+    summarize(cnt = n(),
+              responders = sum(usbInq),
+              responseRate = responders/cnt,
+              USBoriginations = sum(usbplOpen, na.rm = T),
+              USBoriginationRate = USBoriginations/cnt,
+              offUSBoriginations = sum(offUsbOpen, na.rm = T),
+              offUSBOriginationRate = offUSBoriginations/cnt,
+              USBShare = USBoriginations/(USBoriginations + offUSBoriginations)) %>%  # <-- ADD THIS LINE
+    as.data.frame() %>% View()
 
-Summary of updates:
-- Q3 2023 – added 24m performance
-- Q4 2023 – added 24m performance
-- Q2 2024 – added 12m performance
-- Q3 2024 – added 12m performance
-- Q1 2025 – new section, 6m and 12m performance
-- Q2 2025 – new section, 6m performance
-- Q3 2025 – new section, 6m performance
 
-Year-over-year comparison columns were added alongside each update, filtered to the same 40 issuers as before.
-
-Let me know if you have any questions.
-
-Thanks,
-Hima
+total %>%
+    filter(Filtered_control != "REMAINING") %>%  # <-- FIX: was "Remaining", actual value is "REMAINING"
+    mutate(usbplOpen = if_else(lender == "USB", plOpen, 0)) %>%
+    mutate(offUsbOpen = if_else(lender != "USB", plOpen, 0)) %>%
+    group_by(Filtered_control) %>%
+    summarize(cnt = n(),
+              responders = sum(usbInq),
+              responseRate = responders/cnt,
+              USBoriginations = sum(usbplOpen, na.rm = T),
+              USBoriginationRate = USBoriginations/cnt,
+              offUSBoriginations = sum(offUsbOpen, na.rm = T),
+              offUSBOriginationRate = offUSBoriginations/cnt,
+              USBShare = USBoriginations/(USBoriginations + offUSBoriginations)) %>%  # <-- ADD THIS LINE
+    as.data.frame() %>% View()
