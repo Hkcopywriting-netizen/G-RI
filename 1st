@@ -1,2 +1,17 @@
-library(openxlsx)
-ls("package:openxlsx")[grepl("ol", ls("package:openxlsx"), ignore.case = TRUE)]
+The Quarterly DQCO Report has been updated and is attached. All updates use the April 2026 archive.
+
+Summary of updates:
+- Q3 2023 – added 24m performance
+- Q4 2023 – added 24m performance
+- Q2 2024 – added 12m performance
+- Q3 2024 – added 12m performance
+- Q1 2025 – new section, 6m and 12m performance
+- Q2 2025 – new section, 6m performance
+- Q3 2025 – new section, 6m performance
+
+Year-over-year comparison columns were added alongside each update, filtered to the same 40 issuers as before.
+
+Let me know if you have any questions.
+
+Thanks,
+Hima
