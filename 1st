@@ -1,30 +1,8 @@
-total %>%
-    mutate(control = if_else(Filtered_control == "Mailed", "Mailed", "Full Control")) %>%
-    mutate(usbplOpen = if_else(lender == "USB", plOpen, 0)) %>%
-    mutate(offUsbOpen = if_else(lender != "USB", plOpen, 0)) %>%
-    group_by(control) %>%
-    summarize(cnt = n(),
-              responders = sum(usbInq),
-              responseRate = responders/cnt,
-              USBoriginations = sum(usbplOpen, na.rm = T),
-              USBoriginationRate = USBoriginations/cnt,
-              offUSBoriginations = sum(offUsbOpen, na.rm = T),
-              offUSBOriginationRate = offUSBoriginations/cnt,
-              USBShare = USBoriginations/(USBoriginations + offUSBoriginations)) %>%  # <-- ADD THIS LINE
-    as.data.frame() %>% View()
-
-
-total %>%
-    filter(Filtered_control != "REMAINING") %>%  # <-- FIX: was "Remaining", actual value is "REMAINING"
-    mutate(usbplOpen = if_else(lender == "USB", plOpen, 0)) %>%
-    mutate(offUsbOpen = if_else(lender != "USB", plOpen, 0)) %>%
-    group_by(Filtered_control) %>%
-    summarize(cnt = n(),
-              responders = sum(usbInq),
-              responseRate = responders/cnt,
-              USBoriginations = sum(usbplOpen, na.rm = T),
-              USBoriginationRate = USBoriginations/cnt,
-              offUSBoriginations = sum(offUsbOpen, na.rm = T),
-              offUSBOriginationRate = offUSBoriginations/cnt,
-              USBShare = USBoriginations/(USBoriginations + offUSBoriginations)) %>%  # <-- ADD THIS LINE
-    as.data.frame() %>% View()
+Date: June 16, 2026
+Dear Perry,
+I am writing to formally notify you of my resignation from my position as Data Scientist on the Analytics Consulting team at TransUnion. As discussed, my last day of employment will be Friday, June 26, 2026.
+I want to thank you for the opportunity to join the team and for your support and guidance during my time here. I've valued the experience and the chance to work with you and the rest of the team, even in this short time.
+I am committed to ensuring a smooth handover of my responsibilities before my departure, and I'll do everything I can to wrap up my current work and document things clearly for whoever picks them up. Please let me know how I can be most helpful during the transition.
+Thank you again for the opportunity.
+Sincerely,
+Hima karan Pusarla
