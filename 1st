@@ -1,20 +1,27 @@
-slide5 <- total %>%
-    mutate(usbOpenFlag = if_else(lender == "USB", heOpen, 0)) %>%
-    mutate(offUsbOpenFlag = if_else(lender != "USB", heOpen, 0)) %>%
-    mutate(
-        mortgage_status = if_else(Filtered_control == "REMAINING", "No Mortgage", "Mortgage"),
-        control_label = if_else(Filtered_control == "REMAINING", "Filtered Control", Filtered_control),
-        group_label = paste(control_label, mortgage_status)
-    ) %>%
-    group_by(group_label) %>%
+##################### SLIDE 6 ##############################
+# No prior HELOC campaign and no propensity score exist (per Akshaya's note),
+# so breaking response down by targeting segment (HI60/HI40/GEN) instead --
+# the same segmentation already used to build the 6 mailing cells.
+
+slide6 <- total %>%
+    mutate(segment = case_when(
+        cellcode_combined %in% c("1", "2") ~ "HI60",
+        cellcode_combined %in% c("3", "4") ~ "HI40",
+        cellcode_combined %in% c("5", "6") ~ "GEN"
+    )) %>%
+    filter(!is.na(segment), Filtered_control != "REMAINING") %>%
+    group_by(Filtered_control, segment) %>%
     summarize(
         cnt = n(),
-        usbInquiries = sum(usbInq),
-        usbInquiryRate = usbInquiries/cnt,
-        usbOriginations = sum(usbOpenFlag, na.rm = TRUE),
-        usbOriginationRate = usbOriginations/cnt,
-        offUsbOriginations = sum(offUsbOpenFlag, na.rm = TRUE),
-        offUsbOriginationRate = offUsbOriginations/cnt,
-        usbShare = usbOriginations/(usbOriginations + offUsbOriginations)
+        opens = sum(heOpen, na.rm = TRUE)
+    ) %>%
+    group_by(Filtered_control) %>%
+    mutate(
+        pctOfPopulation = cnt/sum(cnt),
+        openRate = opens/cnt,
+        overallRate = sum(opens)/sum(cnt),
+        rateVsOverall = openRate/overallRate
     ) %>%
     as.data.frame()
+
+slide6 %>% view()
