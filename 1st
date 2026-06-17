@@ -1,6 +1,6 @@
 slide5 <- total %>%
-    mutate(usbplOpen = if_else(lender == "USB", usbheOpen, 0)) %>%
-    mutate(offUsbOpen = if_else(lender != "USB", usbheOpen, 0)) %>%
+    mutate(usbOpenFlag = if_else(lender == "USB", heOpen, 0)) %>%
+    mutate(offUsbOpenFlag = if_else(lender != "USB", heOpen, 0)) %>%
     mutate(
         mortgage_status = if_else(Filtered_control == "REMAINING", "No Mortgage", "Mortgage"),
         control_label = if_else(Filtered_control == "REMAINING", "Filtered Control", Filtered_control),
@@ -11,12 +11,10 @@ slide5 <- total %>%
         cnt = n(),
         usbInquiries = sum(usbInq),
         usbInquiryRate = usbInquiries/cnt,
-        usbOriginations = sum(usbplOpen, na.rm = TRUE),
+        usbOriginations = sum(usbOpenFlag, na.rm = TRUE),
         usbOriginationRate = usbOriginations/cnt,
-        offUsbOriginations = sum(offUsbOpen, na.rm = TRUE),
+        offUsbOriginations = sum(offUsbOpenFlag, na.rm = TRUE),
         offUsbOriginationRate = offUsbOriginations/cnt,
         usbShare = usbOriginations/(usbOriginations + offUsbOriginations)
     ) %>%
     as.data.frame()
-
-slide5 %>% view()
