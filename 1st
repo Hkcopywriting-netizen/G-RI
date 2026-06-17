@@ -1,27 +1,9 @@
-##################### SLIDE 6 ##############################
-# No prior HELOC campaign and no propensity score exist (per Akshaya's note),
-# so breaking response down by targeting segment (HI60/HI40/GEN) instead --
-# the same segmentation already used to build the 6 mailing cells.
+Headline:
 
-slide6 <- total %>%
-    mutate(segment = case_when(
-        cellcode_combined %in% c("1", "2") ~ "HI60",
-        cellcode_combined %in% c("3", "4") ~ "HI40",
-        cellcode_combined %in% c("5", "6") ~ "GEN"
-    )) %>%
-    filter(!is.na(segment), Filtered_control != "REMAINING") %>%
-    group_by(Filtered_control, segment) %>%
-    summarize(
-        cnt = n(),
-        opens = sum(heOpen, na.rm = TRUE)
-    ) %>%
-    group_by(Filtered_control) %>%
-    mutate(
-        pctOfPopulation = cnt/sum(cnt),
-        openRate = opens/cnt,
-        overallRate = sum(opens)/sum(cnt),
-        rateVsOverall = openRate/overallRate
-    ) %>%
-    as.data.frame()
+"HI60 segment shows the highest natural HELOC origination rate within Filtered Control, while HI40 leads within the Mailed population"
 
-slide6 %>% view()
+Bottom points (clarifying, not insight):
+
+Considered home equity originations opened with any lender
+Segment reflects the HI60/HI40/GEN targeting cells used to build the mailing file
+Metrics shown for Filtered Control and Mailed populations, since no prior HELOC campaign exists for a cross-campaign comparison
