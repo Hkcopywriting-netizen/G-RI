@@ -1,8 +1,15 @@
-Date: June 16, 2026
-Dear Perry,
-I am writing to formally notify you of my resignation from my position as Data Scientist on the Analytics Consulting team at TransUnion. As discussed, my last day of employment will be Friday, June 26, 2026.
-I want to thank you for the opportunity to join the team and for your support and guidance during my time here. I've valued the experience and the chance to work with you and the rest of the team, even in this short time.
-I am committed to ensuring a smooth handover of my responsibilities before my departure, and I'll do everything I can to wrap up my current work and document things clearly for whoever picks them up. Please let me know how I can be most helpful during the transition.
-Thank you again for the opportunity.
-Sincerely,
-Hima karan Pusarla
+slide5 <- total %>%
+    mutate(usbplOpen = if_else(lender == "USB", plOpen, 0)) %>%
+    mutate(offUsbOpen = if_else(lender != "USB", plOpen, 0)) %>%
+    group_by(Filtered_control) %>%
+    summarize(cnt = n(),
+              usbInquiries = sum(usbInq),
+              usbInquiryRate = usbInquiries/cnt,
+              usbOriginations = sum(usbplOpen, na.rm = TRUE),
+              usbOriginationRate = usbOriginations/cnt,
+              offUsbOriginations = sum(offUsbOpen, na.rm = TRUE),
+              offUsbOriginationRate = offUsbOriginations/cnt,
+              usbShare = usbOriginations/(usbOriginations + offUsbOriginations)) %>%
+    as.data.frame()
+
+slide5 %>% view()
