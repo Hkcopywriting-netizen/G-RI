@@ -1,43 +1,9 @@
-29
+Hi Perry,
+Please find the OneCredit Python template attached. It mirrors the R Markdown version using the onecredit Python package. Let me know if you have any feedback.
+Best regards,
 
-# Variable contribution — uncomment to run
-# model_contribs = onecredit.variable_contribution(
-#     model_json   = model.model_json,
-#     data         = train_dict,
-#     target_name  = 'perf',
-#     weights_name = 'wgt',
-#     bins         = bins
-# )
+Hima
 
 
 
-30
-
-# Local SHAPley explanations — uncomment to run
-# test_cols = ['wgt'] + model_vars['Feature'].tolist()
-# test_dict = {col: data[data['ind'] == 'test'][col].tolist()
-#              for col in test_cols}
-# contributions = onecredit.explain_oc(model.model_json, test_dict)
-# contributions.head(10)
-
-
-
-32
-
-data_dmat = xgb.DMatrix(
-    data[predictors_nz],
-    label         = data['perf'],
-    weight        = data['wgt'],
-    missing       = -9,
-    feature_names = predictors_nz
-)
-
-score_cols = ['wgt'] + model_vars['Feature'].tolist()
-score_dict = {col: data[col].tolist() for col in score_cols}
-
-# Convert model to JSON string as required by predict_oc
-model_json = model.model_json
-
-scored_data = data[['perf', 'wgt', 'ind', 'score1', 'score2', 'score3']].copy()
-scored_data['ocscore'] = onecredit.predict_oc(model_json, score_dict)
-scored_data['xgb_mod'] = xgb_base.predict(data_dmat)
+"Hi Perry, sent you an email with the OneCredit Python template. Attaching the zip here as well."
