@@ -1,184 +1,103 @@
-# OC_Python_External_Template
+No missing values observed and no imputations needed. If there are any missing values, recode to capture that information appropriately as a special value `-9` or where valid recode to max.
 
-Python equivalent of the OneCredit R External Template. Mirrors the R Markdown template structure using the OneCredit Python package.
+## Variable Selection
 
-
-
-# Load libraries
-import pandas as pd
-import numpy as np
-import warnings
-import random
-from sklearn.linear_model import LogisticRegression, LinearRegression
-from sklearn.metrics import roc_auc_score
-import xgboost as xgb
-import onecredit
-
-warnings.filterwarnings('ignore')
-pd.set_option('display.max_columns', None)
-
-# Setting seed to replicate results
-random.seed(324862)
-np.random.seed(324862)
-
-
-
-
-# User Defined Functions
-
-
-
-# Correlation check for the attributes used in the model
-# Returns a correlation matrix and variance inflation factor calculation
-def corrcheck(data, model_vars, target_name, wgts_name):
-    res = {}
-    weights = data[wgts_name].values
-
-    for var in model_vars:
-        X = data[[var]].values
-        y = data[target_name].values
-        lr = LogisticRegression(fit_intercept=False, max_iter=1000, solver='lbfgs')
-        lr.fit(X, y, sample_weight=weights)
-        res[var] = lr.decision_function(X)
-
-    res_df = pd.DataFrame(res)
-
-    vifs = []
-    for var in model_vars:
-        X_vif = res_df[[v for v in model_vars if v != var]].values
-        y_vif = res_df[var].values
-        lr_vif = LinearRegression()
-        lr_vif.fit(X_vif, y_vif, sample_weight=weights)
-        r2 = lr_vif.score(X_vif, y_vif)
-        vif = 1 / (1 - r2) if r2 < 1 else float('inf')
-        vifs.append({'var': var, 'vif': round(vif, 4)})
-
-    cors = res_df.corr().round(3)
-    vif_df = pd.DataFrame(vifs).sort_values('vif', ascending=False).reset_index(drop=True)
-
-    return {'cors': cors, 'vifs': vif_df}
-
-
-# Performance metric functions
-def KS(data, target_name, score, weights):
-    df = data[[target_name, score, weights]].copy().sort_values(score, ascending=False)
-    w_good = df[weights] * (df[target_name] == 1)
-    w_bad  = df[weights] * (df[target_name] == 0)
-    cum_good = w_good.cumsum() / w_good.sum()
-    cum_bad  = w_bad.cumsum()  / w_bad.sum()
-    return (cum_good - cum_bad).abs().max()
-
-def Gini(data, target_name, score, weights):
-    auc = roc_auc_score(data[target_name], data[score], sample_weight=data[weights])
-    return 2 * auc - 1
-
-def ROC(data, target_name, score, weights):
-    return roc_auc_score(data[target_name], data[score], sample_weight=data[weights])
-
-
-
-
-
-# Data
-
-## Data source conventions
-- **perf**: main performance target — 1 = Good, 0 = Bad, indeterminates (2) are removed
-- **wgt**: data weight (required, set to 1 if data is unweighted)
-- **res**: helper random value between 0 and 1
-- **ind**: train and test index
-
-
-
-# Load data — modify the input file here
-data = pd.read_csv('synthdata.csv.gz')
-
-# Create random value and train/test split (80/20)
-data['res'] = np.random.uniform(0, 1, len(data))
-data['ind'] = np.where(data['res'] < 0.8, 'train', 'test')
-
-# Recode special values
-data['BC21S'] = np.where(data['BC21S'] < 0, 999, data['BC21S'])
-data['BU31S'] = np.where(data['BU31S'] < 0,   0, data['BU31S'])
-
-# Remove indeterminates
-data = data[data['perf'] <= 1].reset_index(drop=True)
-
-print(f'Data loaded: {data.shape[0]:,} rows, {data.shape[1]} columns')
-data.head()
+We run an XGBoost model to do the initial variable selection and reduce the predictor set. If there is a manual list of variables to throw out, include that in the blacklist below.
 
 
 
 
 
 
+# Manual drop list
+blacklist = ['badvar']
 
-# Data Summary
+# Initial predictor set based on valid predictors
+predictors = [c for c in valid_preds if c not in blacklist]
+
+# Drop zero variance attributes
+zero_variance = [c for c in predictors if data[c].var() == 0]
+predictors_nz = [c for c in predictors if c not in zero_variance]
+
+print(f'Total predictors : {len(predictors)}')
+print(f'Zero variance    : {len(zero_variance)}')
+print(f'Remaining        : {len(predictors_nz)}')
 
 
 
 
+# Run an XGBoost model to reduce the predictor set
+train_data = data[data['ind'] == 'train'].reset_index(drop=True)
+test_data  = data[data['ind'] == 'test'].reset_index(drop=True)
 
-work1 = (
-    data.groupby('ind')
-    .apply(lambda x: pd.Series({
-        'RawCount' : len(x),
-        'Total'    : int(x['wgt'].sum()),
-        'Goods'    : int((x['wgt'] * (x['perf'] == 1)).sum()),
-        'Bads'     : int((x['wgt'] * (x['perf'] == 0)).sum())
-    }))
-    .reset_index()
+train_dmat = xgb.DMatrix(
+    train_data[predictors_nz],
+    label         = train_data['perf'],
+    weight        = train_data['wgt'],
+    missing       = -9,
+    feature_names = predictors_nz
 )
-work1['Bad Rate'] = work1['Bads'] / work1['Total']
-work1 = work1.sort_values(
-    'ind', key=lambda x: x.map({'train': 0, 'test': 1})
-).reset_index(drop=True)
 
-work1.style \
-    .format({'RawCount': '{:,.0f}', 'Total': '{:,.0f}',
-             'Goods': '{:,.0f}', 'Bads': '{:,.0f}',
-             'Bad Rate': '{:.2%}'}) \
-    .set_caption('Development & validation sets - counts') \
-    .hide(axis='index')
+test_dmat = xgb.DMatrix(
+    test_data[predictors_nz],
+    label         = test_data['perf'],
+    weight        = test_data['wgt'],
+    missing       = -9,
+    feature_names = predictors_nz
+)
+
+params = {
+    'eta'              : 0.1,   # slow learning
+    'max_depth'        : 1,     # single depth for selection
+    'min_child_weight' : 100,
+    'objective'        : 'binary:logistic',
+    'eval_metric'      : 'auc'
+}
+
+xgb_base = xgb.train(
+    params                = params,
+    dtrain                = train_dmat,
+    num_boost_round       = 500,
+    early_stopping_rounds = 10,
+    evals                 = [(train_dmat, 'train'), (test_dmat, 'test')],
+    verbose_eval          = False
+)
 
 
 
 
-## Descriptive Statistics
-
-Running descriptive statistics on the data.
 
 
 
 
+## Feature Importance
 
-# Function for calculating descriptive statistics for numeric type columns
-def numeric_descsumm(x):
-    return pd.Series({
-        'Mean'      : round(x.mean(), 1),
-        'SD'        : round(x.std(), 1),
-        'Median'    : int(round(x.median())),
-        'Min'       : int(round(x.min())),
-        'Max'       : int(round(x.max())),
-        'Distinct'  : int(x.nunique()),
-        '% Special' : (x < 0).mean()
+Pick attributes contributing to 99% of cumulative gain.
+
+
+
+
+
+
+
+importance = xgb_base.get_score(importance_type='gain')
+base_features = (
+    pd.DataFrame({
+        'Feature' : list(importance.keys()),
+        'Gain'    : list(importance.values())
     })
-
-# Define the predictor set
-exclude_cols = ['perf', 'wgt', 'score1', 'score2', 'score3', 'res', 'ind']
-valid_preds  = [c for c in data.columns if c not in exclude_cols]
-numeric_cols = data[valid_preds].select_dtypes(include='number').columns.tolist()
-
-desc_stats = (
-    data[numeric_cols]
-    .apply(numeric_descsumm)
-    .T
-    .reset_index()
-    .rename(columns={'index': 'Attribute'})
+    .sort_values('Gain', ascending=False)
+    .reset_index(drop=True)
 )
+base_features['Gain']     = base_features['Gain'] / base_features['Gain'].sum()
+base_features['CumlGain'] = base_features['Gain'].cumsum()
+base_features = base_features[base_features['CumlGain'] <= 0.99].reset_index(drop=True)
 
-desc_stats.style \
-    .format({'% Special': '{:.1%}'}) \
-    .set_caption('Descriptive statistics - numeric data') \
+print(f'Reduced predictor set: {len(base_features)} attributes')
+
+base_features.style \
+    .format({'Gain': '{:.4f}', 'CumlGain': '{:.4f}'}) \
+    .set_caption('Remaining attributes after variable reduction') \
     .hide(axis='index')
 
 
@@ -186,3 +105,87 @@ desc_stats.style \
 
 
 
+
+# Bin the top XGBoost predictors
+bins = onecredit.optimal_binning(
+    data        = data[data['ind'] == 'train'],
+    model_vars  = base_features['Feature'].tolist(),
+    target_name = 'perf',
+    wgts_name   = 'wgt'
+)
+
+# Select the best of the binned variables
+well_binned = [name for name, b in bins.items() if b.reject_code == 0]
+print(f'Well-binned attributes: {len(well_binned)}')
+
+
+
+
+
+
+
+
+# Consolidate drop list
+drop_list = pd.concat([
+    pd.DataFrame({'Attribute': blacklist,     'Reason': 'Blacklist'}),
+    pd.DataFrame({'Attribute': zero_variance, 'Reason': 'Zero Variance'}),
+    pd.DataFrame({'Attribute': [v for v in predictors
+                                if v not in zero_variance
+                                and v not in base_features['Feature'].tolist()],
+                  'Reason': 'Failed XGB'}),
+    pd.DataFrame({'Attribute': [name for name, b in bins.items() if b.reject_code != 0],
+                  'Reason': 'Failed Binning'})
+], ignore_index=True)
+
+drop_list.style \
+    .set_caption('Variables dropped in reduction') \
+    .hide(axis='index')
+
+
+
+
+
+
+
+# Final model variables after binning
+model_vars = (
+    base_features[base_features['Feature'].isin(well_binned)]
+    .drop(columns='CumlGain')
+    .reset_index(drop=True)
+)
+
+print(f'Final model variables: {len(model_vars)}')
+
+model_vars.style \
+    .format({'Gain': '{:.4f}'}) \
+    .set_caption('Remaining attributes after variable reduction') \
+    .hide(axis='index')
+
+
+
+
+
+
+
+
+## Modifying the Bins Through Interactive Tool
+
+The `merge_bins` function opens an interactive binning dashboard with two tabs:
+
+1. **View Summary** — high level view of variables, trends and IV
+2. **View Details** — variable level view allowing: neutralize bins, set monotonicity pattern, group bins, undo/redo
+
+Click **Quit** to save changes. If window is cancelled without quitting, changes are not saved.
+
+The above can also be done using `set_neutral` and `set_pattern` functions.
+
+Saving the bins in a new variable keeps the original binning object in the environment.
+
+
+
+
+
+
+
+# Uncomment to open interactive binning dashboard
+# bins_upd = onecredit.merge_bins(bins)
