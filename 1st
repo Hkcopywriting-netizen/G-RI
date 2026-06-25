@@ -1,8 +1,13 @@
 # Bin the top XGBoost predictors
+# Convert train data to dictionary format as required by onecredit
 train_subset = data[data['ind'] == 'train'].reset_index(drop=True)
 
+# Build data dictionary
+data_dict = {col: train_subset[col].tolist() 
+             for col in base_features['Feature'].tolist() + ['perf', 'wgt']}
+
 bins = onecredit.optimal_binning(
-    data         = train_subset,
+    data         = data_dict,
     model_vars   = base_features['Feature'].tolist(),
     target_name  = 'perf',
     weights_name = 'wgt'
