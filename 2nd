@@ -1,0 +1,9 @@
+# Static bin visualization
+# Note: onecredit.binning is a module not a callable function
+# Displaying bin summary statistics instead
+bins_to_viz = {k: bins[k] for k in well_binned}
+
+for var, b in bins_to_viz.items():
+    print(f"\n{var}")
+    print(f"  IV     : {sum(b.iv):.4f}")
+    print(f"  Splits : {b.splits}")
