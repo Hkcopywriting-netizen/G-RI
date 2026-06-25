@@ -1,2 +1,18 @@
-for name, b in bins.items():
-    print(name, b.reject_code)
+# Bin the top XGBoost predictors
+train_subset = data[data['ind'] == 'train'].reset_index(drop=True)
+
+# Build data dictionary as required by onecredit
+data_dict = {col: train_subset[col].tolist()
+             for col in base_features['Feature'].tolist() + ['perf', 'wgt']}
+
+bins = onecredit.optimal_binning(
+    data         = data_dict,
+    model_vars   = base_features['Feature'].tolist(),
+    target_name  = 'perf',
+    weights_name = 'wgt'
+)
+
+# Select the best of the binned variables
+well_binned = [name for name, b in bins.items()
+               if 'SUCCESS' in str(b.reject_code)]
+print(f'Well-binned attributes: {len(well_binned)}')
