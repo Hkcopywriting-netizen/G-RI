@@ -1,39 +1,93 @@
-# Consolidate drop list
-drop_list = pd.concat([
-    pd.DataFrame({'Attribute': blacklist,
-                  'Reason': 'Blacklist'}),
-    pd.DataFrame({'Attribute': zero_variance,
-                  'Reason': 'Zero Variance'}),
-    pd.DataFrame({'Attribute': [v for v in predictors
-                                if v not in zero_variance
-                                and v not in base_features['Feature'].tolist()],
-                  'Reason': 'Failed XGB'}),
-    pd.DataFrame({'Attribute': [name for name, b in bins.items()
-                                if 'SUCCESS' not in str(b.reject_code)],
-                  'Reason': 'Failed Binning'})
-], ignore_index=True)
-
-drop_list.style \
-    .set_caption('Variables dropped in reduction') \
-    .hide(axis='index')
+# Performance
 
 
 
 
+data_dmat = xgb.DMatrix(
+    data[predictors_nz],
+    label         = data['perf'],
+    weight        = data['wgt'],
+    missing       = -9,
+    feature_names = predictors_nz
+)
+
+score_cols = ['wgt'] + model_vars['Feature'].tolist()
+score_dict = {col: data[col].tolist() for col in score_cols}
+
+scored_data = data[['perf', 'wgt', 'ind', 'score1', 'score2', 'score3']].copy()
+scored_data['ocscore'] = onecredit.predict_oc(model, score_dict)
+scored_data['xgb_mod'] = xgb_base.predict(data_dmat)
 
 
-# Final model variables after binning
-model_vars = (
-    base_features[base_features['Feature'].isin(well_binned)]
-    .drop(columns='CumlGain')
+
+
+
+
+## KS
+
+
+
+
+
+
+ks_results = []
+for grp, df in scored_data.groupby('ind'):
+    ks_results.append({
+        'Index'    : grp,
+        'Total'    : int(df['wgt'].sum()),
+        'newScore' : round(100 * KS(df, 'perf', 'ocscore', 'wgt'), 2),
+        'cv_score' : round(100 * KS(df, 'perf', 'score1',  'wgt'), 2),
+        'xgb_mod'  : round(100 * KS(df, 'perf', 'xgb_mod', 'wgt'), 2)
+    })
+
+ks_df = (
+    pd.DataFrame(ks_results)
+    .sort_values('Index', ascending=False)
     .reset_index(drop=True)
 )
 
-print(f'Final model variables: {len(model_vars)}')
+ks_df.style \
+    .format({'Total': '{:,.0f}',
+             'newScore': '{:.2f}',
+             'cv_score': '{:.2f}',
+             'xgb_mod' : '{:.2f}'}) \
+    .set_caption('Kolmogorov-Smirnov Statistic') \
+    .hide(axis='index')
 
-model_vars.style \
-    .format({'Gain': '{:.4f}'}) \
-    .set_caption('Remaining attributes after variable reduction') \
+
+
+
+
+
+## Gini
+
+
+
+
+
+
+gini_results = []
+for grp, df in scored_data.groupby('ind'):
+    gini_results.append({
+        'Index'     : grp,
+        'Total'     : int(df['wgt'].sum()),
+        'newScoreg' : round(100 * Gini(df, 'perf', 'ocscore', 'wgt'), 2),
+        'cv_scoreg' : round(100 * Gini(df, 'perf', 'score1',  'wgt'), 2),
+        'xgb_modg'  : round(100 * Gini(df, 'perf', 'xgb_mod', 'wgt'), 2)
+    })
+
+gini_df = (
+    pd.DataFrame(gini_results)
+    .sort_values('Index', ascending=False)
+    .reset_index(drop=True)
+)
+
+gini_df.style \
+    .format({'Total': '{:,.0f}',
+             'newScoreg': '{:.2f}',
+             'cv_scoreg': '{:.2f}',
+             'xgb_modg' : '{:.2f}'}) \
+    .set_caption('Gini') \
     .hide(axis='index')
 
 
@@ -42,157 +96,31 @@ model_vars.style \
 
 
 
-
-## Modifying the Bins Through Interactive Tool
-
-The `merge_bins` function opens an interactive binning dashboard with two tabs:
-
-1. **View Summary** — high level view of variables, trends and IV
-2. **View Details** — variable level view allowing: neutralize bins, set monotonicity pattern, group bins, undo/redo
-
-Click **Quit** to save changes. If window is cancelled without quitting, changes are not saved.
-
-The above can also be done using `set_neutral` and `set_pattern` functions.
-
-Saving the bins in a new variable keeps the original binning object in the environment.
+## ROC
 
 
 
 
+roc_results = []
+for grp, df in scored_data.groupby('ind'):
+    roc_results.append({
+        'Index'     : grp,
+        'Total'     : int(df['wgt'].sum()),
+        'newScorer' : round(100 * ROC(df, 'perf', 'ocscore', 'wgt'), 2),
+        'cv_scorer' : round(100 * ROC(df, 'perf', 'score1',  'wgt'), 2),
+        'xgb_modr'  : round(100 * ROC(df, 'perf', 'xgb_mod', 'wgt'), 2)
+    })
 
-
-
-# Uncomment to open interactive binning dashboard
-# bins_upd = onecredit.merge_bins(bins)
-
-
-
-
-
-
-
-## Static Visualization of the Bins
-
-
-
-
-
-bins_to_viz = {k: bins[k] for k in well_binned}
-onecredit.binning(bins_to_viz)
-# onecredit.binning(bins_upd)  # Use bins_upd if interactive changes were made
-
-
-
-
-
-
-## Modeling
-
-
-
-
-
-train_model_cols = model_vars['Feature'].tolist() + ['perf', 'wgt']
-train_dict = {col: train_subset[col].tolist()
-              for col in train_model_cols}
-
-model = onecredit.comet(
-    data        = train_dict,
-    model_vars  = model_vars['Feature'].tolist(),
-    target_name = 'perf',
-    wgts_name   = 'wgt',
-    bins        = bins
-    # penalty_l2 = 0.0005
-    # penalty_l1 = 0.0
+roc_df = (
+    pd.DataFrame(roc_results)
+    .sort_values('Index', ascending=False)
+    .reset_index(drop=True)
 )
 
-
-
-
-
-
-
-## Correlations
-
-
-
-
-
-
-model_corr = corrcheck(
-    data        = data[data['ind'] == 'train'].reset_index(drop=True),
-    model_vars  = model_vars['Feature'].tolist(),
-    target_name = 'perf',
-    wgts_name   = 'wgt'
-)
-
-cors_df = model_corr['cors']
-
-cors_df.style \
-    .background_gradient(cmap='RdBu_r', vmin=-1, vmax=1) \
-    .format('{:.3f}') \
-    .set_caption('Correlation Matrix for Model Attributes')
-
-
-
-
-
-
-
-
-
-## Attribute Summary
-
-VIF thresholds:
-- < 5 : green (safe)
-- 5–10 : orange (moderate)
-- > 10 : red (problematic)
-
-
-
-
-
-
-vif_df = model_corr['vifs'].rename(columns={'var': 'Variable', 'vif': 'VIF'})
-
-def vif_color(val):
-    if val < 5:
-        return 'background-color: #c7e9c0'
-    elif val < 10:
-        return 'background-color: #fdd49e'
-    else:
-        return 'background-color: #fcbba1; font-weight: bold'
-
-vif_df.style \
-    .applymap(vif_color, subset=['VIF']) \
-    .format({'VIF': '{:.4f}'}) \
-    .set_caption('Variance Inflation Factor for Model Attributes') \
+roc_df.style \
+    .format({'Total': '{:,.0f}',
+             'newScorer': '{:.2f}',
+             'cv_scorer': '{:.2f}',
+             'xgb_modr' : '{:.2f}'}) \
+    .set_caption('Receiver Operating Characteristics') \
     .hide(axis='index')
-
-
-
-
-
-
-
-# Variable contribution — uncomment to run
-# model_contribs = onecredit.variable_contribution(
-#     model,
-#     data        = train_dict,
-#     target_name = 'perf',
-#     wgts_name   = 'wgt',
-#     bins        = bins
-# )
-
-
-
-
-
-
-
-# Local SHAPley explanations — uncomment to run
-# test_cols  = ['wgt'] + model_vars['Feature'].tolist()
-# test_dict  = {col: data[data['ind'] == 'test'][col].tolist()
-#               for col in test_cols}
-# contributions = onecredit.explain_oc(model, test_dict)
-# contributions.head(10)
