@@ -1,42 +1,188 @@
-Hi Team,
-My name is Hima Karan Pusarla and my last working day at TransUnion is June 26, 2026. I am based at the Chicago 555 office and would like to return my company equipment in person on or before my last day.
-Could you please let me know:
+# OC_Python_External_Template
 
-The drop-off location at the 555 office
-The return process and any forms to complete
-A complete list of items I need to return
-
-I want to ensure everything is properly documented on both ends.
-Thank you!
-Best regards,
-
-Hima Karan Pusarla
-
-Employee ID: [your employee ID]
-
-Email: [your TU email]
-
-Phone: [your number]
+Python equivalent of the OneCredit R External Template. Mirrors the R Markdown template structure using the OneCredit Python package.
 
 
 
+# Load libraries
+import pandas as pd
+import numpy as np
+import warnings
+import random
+from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.metrics import roc_auc_score
+import xgboost as xgb
+import onecredit
 
-Hi Team,
-My name is Hima Karan Pusarla and my last working day at TransUnion is June 26, 2026. As per the Voluntary Termination Packet, I understand I am required to repay my sign-on bonus.
-I would like to proceed with repayment via wire transfer as mentioned in the repayment form. Could you please provide me with the wire transfer instructions to complete this?
-Additionally, could you confirm the exact net repayment amount expected from my end so I can process this accurately?
-Please note that I will lose access to my TransUnion email after June 26. For further communication, please reach me at:
+warnings.filterwarnings('ignore')
+pd.set_option('display.max_columns', None)
 
-Personal Email: karan2000poosarla@gmail.com
-Phone: [your number]
+# Setting seed to replicate results
+random.seed(324862)
+np.random.seed(324862)
 
-Thank you!
-Best regards,
 
-Hima Karan Pusarla
 
-Employee ID: [your employee ID]
 
-Personal Email: karan2000poosarla@gmail.com
+# User Defined Functions
 
-Employee ID: [your employee ID]
+
+
+# Correlation check for the attributes used in the model
+# Returns a correlation matrix and variance inflation factor calculation
+def corrcheck(data, model_vars, target_name, wgts_name):
+    res = {}
+    weights = data[wgts_name].values
+
+    for var in model_vars:
+        X = data[[var]].values
+        y = data[target_name].values
+        lr = LogisticRegression(fit_intercept=False, max_iter=1000, solver='lbfgs')
+        lr.fit(X, y, sample_weight=weights)
+        res[var] = lr.decision_function(X)
+
+    res_df = pd.DataFrame(res)
+
+    vifs = []
+    for var in model_vars:
+        X_vif = res_df[[v for v in model_vars if v != var]].values
+        y_vif = res_df[var].values
+        lr_vif = LinearRegression()
+        lr_vif.fit(X_vif, y_vif, sample_weight=weights)
+        r2 = lr_vif.score(X_vif, y_vif)
+        vif = 1 / (1 - r2) if r2 < 1 else float('inf')
+        vifs.append({'var': var, 'vif': round(vif, 4)})
+
+    cors = res_df.corr().round(3)
+    vif_df = pd.DataFrame(vifs).sort_values('vif', ascending=False).reset_index(drop=True)
+
+    return {'cors': cors, 'vifs': vif_df}
+
+
+# Performance metric functions
+def KS(data, target_name, score, weights):
+    df = data[[target_name, score, weights]].copy().sort_values(score, ascending=False)
+    w_good = df[weights] * (df[target_name] == 1)
+    w_bad  = df[weights] * (df[target_name] == 0)
+    cum_good = w_good.cumsum() / w_good.sum()
+    cum_bad  = w_bad.cumsum()  / w_bad.sum()
+    return (cum_good - cum_bad).abs().max()
+
+def Gini(data, target_name, score, weights):
+    auc = roc_auc_score(data[target_name], data[score], sample_weight=data[weights])
+    return 2 * auc - 1
+
+def ROC(data, target_name, score, weights):
+    return roc_auc_score(data[target_name], data[score], sample_weight=data[weights])
+
+
+
+
+
+# Data
+
+## Data source conventions
+- **perf**: main performance target — 1 = Good, 0 = Bad, indeterminates (2) are removed
+- **wgt**: data weight (required, set to 1 if data is unweighted)
+- **res**: helper random value between 0 and 1
+- **ind**: train and test index
+
+
+
+# Load data — modify the input file here
+data = pd.read_csv('synthdata.csv.gz')
+
+# Create random value and train/test split (80/20)
+data['res'] = np.random.uniform(0, 1, len(data))
+data['ind'] = np.where(data['res'] < 0.8, 'train', 'test')
+
+# Recode special values
+data['BC21S'] = np.where(data['BC21S'] < 0, 999, data['BC21S'])
+data['BU31S'] = np.where(data['BU31S'] < 0,   0, data['BU31S'])
+
+# Remove indeterminates
+data = data[data['perf'] <= 1].reset_index(drop=True)
+
+print(f'Data loaded: {data.shape[0]:,} rows, {data.shape[1]} columns')
+data.head()
+
+
+
+
+
+
+
+# Data Summary
+
+
+
+
+
+work1 = (
+    data.groupby('ind')
+    .apply(lambda x: pd.Series({
+        'RawCount' : len(x),
+        'Total'    : int(x['wgt'].sum()),
+        'Goods'    : int((x['wgt'] * (x['perf'] == 1)).sum()),
+        'Bads'     : int((x['wgt'] * (x['perf'] == 0)).sum())
+    }))
+    .reset_index()
+)
+work1['Bad Rate'] = work1['Bads'] / work1['Total']
+work1 = work1.sort_values(
+    'ind', key=lambda x: x.map({'train': 0, 'test': 1})
+).reset_index(drop=True)
+
+work1.style \
+    .format({'RawCount': '{:,.0f}', 'Total': '{:,.0f}',
+             'Goods': '{:,.0f}', 'Bads': '{:,.0f}',
+             'Bad Rate': '{:.2%}'}) \
+    .set_caption('Development & validation sets - counts') \
+    .hide(axis='index')
+
+
+
+
+## Descriptive Statistics
+
+Running descriptive statistics on the data.
+
+
+
+
+
+# Function for calculating descriptive statistics for numeric type columns
+def numeric_descsumm(x):
+    return pd.Series({
+        'Mean'      : round(x.mean(), 1),
+        'SD'        : round(x.std(), 1),
+        'Median'    : int(round(x.median())),
+        'Min'       : int(round(x.min())),
+        'Max'       : int(round(x.max())),
+        'Distinct'  : int(x.nunique()),
+        '% Special' : (x < 0).mean()
+    })
+
+# Define the predictor set
+exclude_cols = ['perf', 'wgt', 'score1', 'score2', 'score3', 'res', 'ind']
+valid_preds  = [c for c in data.columns if c not in exclude_cols]
+numeric_cols = data[valid_preds].select_dtypes(include='number').columns.tolist()
+
+desc_stats = (
+    data[numeric_cols]
+    .apply(numeric_descsumm)
+    .T
+    .reset_index()
+    .rename(columns={'index': 'Attribute'})
+)
+
+desc_stats.style \
+    .format({'% Special': '{:.1%}'}) \
+    .set_caption('Descriptive statistics - numeric data') \
+    .hide(axis='index')
+
+
+
+
+
+
