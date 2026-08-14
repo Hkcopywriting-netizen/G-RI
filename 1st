@@ -1,126 +1,380 @@
-# Performance
+Yes. I can clean this into a proper 2-speaker transcript, separating Karthikeya (Manager) from You, while preserving the technical details, dates, thresholds, and tasks he assigned.
 
+A few words in the automatic transcript appear to be internal/company-specific terms (for example iClick/iCLIC, CPS, TOC, ROC, Converstone, etc.), so I’ll preserve those terms where they’re audible rather than silently changing their meaning.
 
+Cleaned Transcript
 
+Karthikeya (Manager):
+All right. So, I shared—not exactly a list, but more like the entire thing about what needs to be done for the analysis. Did you go through the Slack message?
 
-data_dmat = xgb.DMatrix(
-    data[predictors_nz],
-    label         = data['perf'],
-    weight        = data['wgt'],
-    missing       = -9,
-    feature_names = predictors_nz
-)
+You:
+Yeah, yeah. I just saw it while replying to you.
 
-score_cols = ['wgt'] + model_vars['Feature'].tolist()
-score_dict = {col: data[col].tolist() for col in score_cols}
+Karthikeya:
+Okay. Let me give you a brief overview so that you can plan your work.
 
-scored_data = data[['perf', 'wgt', 'ind', 'score1', 'score2', 'score3']].copy()
-scored_data['ocscore'] = onecredit.predict_oc(model, score_dict)
-scored_data['xgb_mod'] = xgb_base.predict(data_dmat)
+First of all, by Monday EOD your time—or basically by Tuesday’s meeting—we need to validate whether whatever we’ve done is correct. So we essentially have two days to wrap this up.
 
+There are 14 types of insights that I think are relevant. You don’t have to work on all 14. You will work on seven, and the other seven will be worked on by J and N.
 
+The items assigned to J and R are a little more involved. Those aren’t directly with you, so I’ll mostly work with them to make sure those are completed.
 
+But let me explain how the insight analysis needs to be done. I believe you already have decent exposure to how this works.
 
+The idea is very simple.
 
+Ultimately, we need to publish a table. In that final table, we’ll have an insight, where an insight essentially represents some type of signal.
 
-## KS
+For every signal, we need to show:
 
+* Number of SBS customers WITH the signal
+* Number of SBS customers WITHOUT the signal
+* Average/NRR for customers with the signal
+* Average/NRR for customers without the signal
+* The resulting uplift
 
+For now, cashback savings will require a different analysis. That’s something I’ll pick up on Monday.
 
+For your seven insights, you primarily need to populate this table. But to populate it correctly, you’ll need to perform some analysis.
 
+Let’s take supplementary-to-overall commercial spend as an example.
 
+This is one of the signals you need to create.
 
-ks_results = []
-for grp, df in scored_data.groupby('ind'):
-    ks_results.append({
-        'Index'    : grp,
-        'Total'    : int(df['wgt'].sum()),
-        'newScore' : round(100 * KS(df, 'perf', 'ocscore', 'wgt'), 2),
-        'cv_score' : round(100 * KS(df, 'perf', 'score1',  'wgt'), 2),
-        'xgb_mod'  : round(100 * KS(df, 'perf', 'xgb_mod', 'wgt'), 2)
-    })
+Suppose you create the signal and decide:
 
-ks_df = (
-    pd.DataFrame(ks_results)
-    .sort_values('Index', ascending=False)
-    .reset_index(drop=True)
-)
+If supplementary-to-overall commercial spend is greater than, say, 10% or 20%, then we’ll provide this insight to our MBDs.
 
-ks_df.style \
-    .format({'Total': '{:,.0f}',
-             'newScore': '{:.2f}',
-             'cv_score': '{:.2f}',
-             'xgb_mod' : '{:.2f}'}) \
-    .set_caption('Kolmogorov-Smirnov Statistic') \
-    .hide(axis='index')
+MBDs here are basically the sales representatives.
 
+Then we can tell Sales:
 
+“This customer has a significant amount of supplementary spend, which means their employees may be making payments—for example, vendor payments or team-related payments. Therefore, they probably need to manage their expenses.”
 
+That gives us a reason to say that expense management could be a good solution for this customer, and therefore we can potentially sell them a corporate product.
 
+That’s how I’ve finalized these types of insights—we need to be able to create a story around each insight.
 
+You:
+Yeah, got it. So the story is the main part. We need to have a meaningful reason behind it.
 
-## Gini
+Karthikeya:
+Exactly.
 
+Now, the next question is: How do you determine the threshold?
 
+I can’t simply tell you that it should be 10% or 20%. You need to derive it from the analysis.
 
+We’ve seen in the past that some signals produce things like 2.7x, 1.7x, 4.2x, etc.
 
+Essentially, what we’re saying is:
 
+Customers with the insight/signal versus customers without the insight/signal should have a meaningful gap or uplift.
 
-gini_results = []
-for grp, df in scored_data.groupby('ind'):
-    gini_results.append({
-        'Index'     : grp,
-        'Total'     : int(df['wgt'].sum()),
-        'newScoreg' : round(100 * Gini(df, 'perf', 'ocscore', 'wgt'), 2),
-        'cv_scoreg' : round(100 * Gini(df, 'perf', 'score1',  'wgt'), 2),
-        'xgb_modg'  : round(100 * Gini(df, 'perf', 'xgb_mod', 'wgt'), 2)
-    })
+I think the minimum uplift we’re comfortable with should be around 1.5x.
 
-gini_df = (
-    pd.DataFrame(gini_results)
-    .sort_values('Index', ascending=False)
-    .reset_index(drop=True)
-)
+We shouldn’t pick an insight that’s giving us less than approximately 1.5x uplift.
 
-gini_df.style \
-    .format({'Total': '{:,.0f}',
-             'newScoreg': '{:.2f}',
-             'cv_scoreg': '{:.2f}',
-             'xgb_modg' : '{:.2f}'}) \
-    .set_caption('Gini') \
-    .hide(axis='index')
+We’re tracking NRR, so we’ll use NRR here.
 
+You:
+Yeah. So we’ll have NRR with the insight and NRR without the insight.
 
+Karthikeya:
+Exactly. Compute the uplift between those two.
 
+Ideally, it should be at least 1.5x. If it’s higher, that’s even better.
 
+But I don’t want to make the requirement 2x because then we’ll suffer in terms of volume. I don’t want the eligible customer volume to become too small.
 
+So I think we should aim for approximately 1.5x uplift.
 
+For example, if you achieve 1.5x uplift and there are around 6,000 customers for whom the signal is present, I’m good with that.
 
-## ROC
+You:
+Okay. And if it’s less than 5,000, maybe we’d use something like 1.25?
 
+Karthikeya:
+Exactly, because if it’s not even 5,000 customers, we need to make sure that particular signal has enough coverage.
 
+So coverage is important as well.
 
+I’ll create a heuristic around this, but again, this isn’t set in stone. We can play around with it.
 
-roc_results = []
-for grp, df in scored_data.groupby('ind'):
-    roc_results.append({
-        'Index'     : grp,
-        'Total'     : int(df['wgt'].sum()),
-        'newScorer' : round(100 * ROC(df, 'perf', 'ocscore', 'wgt'), 2),
-        'cv_scorer' : round(100 * ROC(df, 'perf', 'score1',  'wgt'), 2),
-        'xgb_modr'  : round(100 * ROC(df, 'perf', 'xgb_mod', 'wgt'), 2)
-    })
+At a high level, just remember these factors.
 
-roc_df = (
-    pd.DataFrame(roc_results)
-    .sort_values('Index', ascending=False)
-    .reset_index(drop=True)
-)
+Also, don’t come up with a threshold like 0.2% or something that doesn’t make practical sense.
 
-roc_df.style \
-    .format({'Total': '{:,.0f}',
-             'newScorer': '{:.2f}',
-             'cv_scorer': '{:.2f}',
-             'xgb_modr' : '{:.2f}'}) \
-    .set_caption('Receiver Operating Characteristics') \
-    .hide(axis='index')
+Use meaningful, easy-to-explain thresholds—something like 20%, 30%, etc.
+
+You:
+Okay.
+
+So are we working only with the February date?
+
+Karthikeya:
+No.
+
+When you’re fetching these signals, think of it as if the signals are going to be used for the January campaign.
+
+If they’re going into January, you need to fetch the signals from December.
+
+Previously, you were fetching everything for January. Now I’m asking you to do it as of December 2025.
+
+Basically, model scores are available for the January campaign.
+
+The model scores for January and February will remain more or less the same because the major variables driving those scores are things like revenue and total spend, which won’t change dramatically month over month.
+
+We’re essentially using these signals for the February campaign, but these scores ideally correspond to January.
+
+So whatever vintage we’re using for the scores, we should create the insights for the same vintage. Otherwise, the scores and insights won’t align properly.
+
+So use the date as of December 2025 and fetch everything up to that point.
+
+You:
+Okay.
+
+Karthikeya:
+Now, some signals aren’t really date-specific.
+
+For example:
+
+Number of employees and EC penetration rate aren’t necessarily date-specific.
+
+But when you come to something like supplementary-to-overall commercial spend ratio, that’s different.
+
+You:
+For that, should we analyze the past 12 months?
+
+Karthikeya:
+I think you should calculate two versions.
+
+Whenever you’re computing a spend-based signal, calculate it using:
+
+Last 3 months, and
+Last 12 months.
+
+Then compare them.
+
+First, determine which version gives you better rank ordering.
+
+Suppose your 3-month spend ratio gives you better rank ordering compared with the 12-month spend ratio. Then you’d probably want to use the 3-month version.
+
+Ranking is more important initially.
+
+If both versions have more or less the same ranking performance, then focus on volume.
+
+Then ask:
+
+At approximately 1.5x uplift, which version gives me the higher customer volume?
+
+That’s the one we’d prefer.
+
+You:
+Okay.
+
+Karthikeya:
+Most of the variables you have are spend-based, so you can use this approach for them.
+
+At a high level, I’ve already divided the work so you can focus specifically on this part.
+
+Now I’ll give you some context because you’re new to some of these variables.
+
+When you’re looking at the spend variables at an iClick level, remember that an iClick can have an OPEN card, and those OPEN customers can also have a CPS card.
+
+You:
+Okay. CPS means consumer?
+
+Karthikeya:
+Yes.
+
+Now, when we’re talking about commercial spend, the variables from approximately point 2 through point 6 are commercial-spend variables.
+
+We’re only talking about the OPEN/commercial spend there.
+
+These customers won’t have corporate spend because they’re corporate-eligible customers.
+
+So for these spend variables, your denominator is generally the overall commercial spend, meaning the total commercial spend made by the iClick.
+
+The seventh point, however, is CPS spend.
+
+CPS-to-overall-commercial spend is different because CPS isn’t part of commercial spend; it’s outside it.
+
+You can find the corresponding code in the attached Python (.py) file.
+
+You:
+Yeah, okay.
+
+Karthikeya:
+Now, you can also divide overall commercial spend into two broad categories:
+
+B2B spend and T&E spend.
+
+Again, you should be able to get the code for this.
+
+The concept is simple—you are identifying whether those transactions are business-related or things such as travel and entertainment.
+
+Then you have supplementary spend.
+
+Supplementary spend basically tells us how much spending is being done through the customer’s employees/supplementary cards.
+
+Then there’s new TOC spend.
+
+TOC here represents the merchant-related component. Essentially, we’re trying to understand whether the customer has started spending with new merchants, and then we’re dividing that by the overall commercial spend.
+
+For example, suppose a customer has started spending with multiple new merchants.
+
+That could indicate that the customer is expanding.
+
+You:
+Yes. So if they’re expanding, there may be a higher propensity for them to take the corporate product.
+
+Karthikeya:
+Exactly. That’s the story behind that insight.
+
+Then there’s high ROC.
+
+High ROC here means the transaction size is greater than a particular threshold. I think the threshold currently being used is around $5,000.
+
+Essentially, we’re looking at the total customer spend where individual transaction amounts were greater than $5,000.
+
+The idea is that if you’re making these kinds of large transactions to merchants, you would want that spending to be managed properly.
+
+That’s the overall concept.
+
+For each of these signals, the story is somewhat similar.
+
+We’re trying to understand whether the customer’s behavior indicates that they are a good candidate for a corporate product, and then we’re creating an insight based on that behavior.
+
+Everything I’ve explained is also written down, so you can refer to that for a proper understanding.
+
+Now, if you don’t have access to some code or certain data points—for example, Converstone—that’s fine.
+
+Do you have access to Converstone?
+
+You:
+No. I only have access to Lumi.
+
+Karthikeya:
+Okay.
+
+Then anything you genuinely don’t have access to, don’t work on that particular item.
+
+I think the first point may be something you won’t be able to do because it’s fetching something you don’t currently have access to.
+
+That’s okay.
+
+Out of the seven assigned items, you might be able to complete only around four based on your current access.
+
+Whatever you can do, try to complete it by Monday.
+
+But if you’re missing access to important spend variables, reach out to Rajesh.
+
+It shouldn’t happen that the work isn’t completed simply because you didn’t have access and didn’t reach out to anyone.
+
+You:
+Yeah, got it.
+
+Karthikeya:
+The third thing you need to work on is the 180K population.
+
+Originally, we started with the entire business population and applied a list of suppressions to align it with the corporate-eligible customer population.
+
+That’s how we arrived at approximately 180K customers.
+
+Within that eligible 180K population, we also applied a condition that:
+
+NRR > 0
+
+and the corporate profitability score > 0.
+
+But that’s no longer completely correct.
+
+It’s not exactly wrong; the issue is that the modeling team has created a new score.
+
+So we need to use that new score instead.
+
+I’ve shared an email containing that information.
+
+I think the file has around three things. One column should be the Obligor ID, another is an additional/model variable, and another column is essentially the profitability score.
+
+However, the data I’m preparing is at the iClick level.
+
+So we need to convert/map the score to iClick level.
+
+I’ve also shared my approach for doing that over Slack.
+
+You should see the instructions there about how to map Obligor to iClick.
+
+Again, if you don’t have access to some of the spend variables, reach out to Rajesh.
+
+I think that’s everything.
+
+If you have questions over the next two or three hours, let me know. Otherwise, we’ll meet on Monday.
+
+You:
+Okay. One last question.
+
+We’re taking the as-of date as December, but are we performing the iClick-level insight analysis on the existing 180K corporate-eligible February population? Basically, are we using that same list?
+
+Karthikeya:
+No. That’s what I’m saying.
+
+You need to compute the eligible file/population again.
+
+Go back to the sizing chart.
+
+You need to recreate the base population.
+
+You know how to do that, right?
+
+We start with the SBS population/existing SBS customers and then apply the required suppressions and eligibility conditions.
+
+You:
+Yeah, okay. I have the code for that.
+
+Karthikeya:
+Exactly.
+
+Right now, that population was fetched as of February 2026.
+
+Instead, fetch/recreate that information as of December 2025.
+
+You:
+December 2025. Okay.
+
+Karthikeya:
+Correct.
+
+And when you’re applying the profitability-related condition, use the new corporate profitability score.
+
+So essentially, you need to redo the entire 180K population exercise as of December 2025.
+
+The final population may not literally remain 180K—the point is to recreate that eligible population using the December 2025 vintage and the new score.
+
+You:
+Got it, got it. Clear.
+
+Karthikeya:
+Clear, right?
+
+You:
+Yeah, clear.
+
+Karthikeya:
+Okay then. Let me know if you face any issues in the next two to three hours. Otherwise, we’ll meet on Monday.
+
+You:
+Sure. Thank you.
+
+⸻
+
+The most important instruction Karthikeya gave you
+
+Your work is not simply running the existing February analysis again.
+
+You need to rebuild the eligible/base population as of December 2025, using the new profitability score, and then perform the insight analysis on that newly created population.
+
+For each assigned spend-based insight, test 3-month vs. 12-month versions, find sensible thresholds, compare NRR with signal vs. without signal, target roughly 1.5x uplift while maintaining good customer volume/coverage, and choose the version/threshold that gives the best balance of rank ordering + uplift + volume.
+
+And every insight needs a business story explaining why that behavior indicates the customer could be a good prospect for the corporate product.
