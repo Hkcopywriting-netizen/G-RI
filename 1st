@@ -1,464 +1,242 @@
-Conversation Transcript
-Kartikeya and Himakaran
+Call Transcript
 
-Recording 1: Process and Task Explanation
+Participants
 
-Kartikeya: These are the customers who have been targeted. When I say “targeted,” I mean they have been uploaded to OnePush and attempted by the respective sales colleagues.
+Hima / Himakaran: Working with Kartikeya and explaining the requirement.
+Manager / Senior Colleague: Leads the discussion and coordinates with Nikita and Madhurima.
+Nikita: Provides information about the Metric Gather table, TSC logic, attempts, and conversion timelines.
+Madhurima: Provides information about the cross-sell data and signing/conversion window.
 
-Once they have been attempted, we need to identify whether that attempt resulted in a cross-sell-related conversion.
+Transcript
 
-Himakaran: Got it.
+Hima: Hi, sir.
 
-Kartikeya: That is what we are trying to determine. Let me explain the challenge and why we are currently stuck.
+Manager: Hello.
 
-There is a table created by Saurabh’s team. Saurabh is from the measurement side.
+Another participant: Hello.
 
-Himakaran: Okay.
+Hima: Hi. Hello, hello. Hi, sir.
 
-Kartikeya: Kai Chen is the person who creates it. It is called the Metric Gather table. I will share the code with you as well. You do not need to learn every detail immediately; just focus on understanding the story.
+Manager: Hima, my question to you is: what exactly do you need?
 
-The Metric Gather table contains iClick IDs and Corp IDs. A combination of these is represented by something called SBMCA.
+Hima: Presently, Kartikeya is working on an analysis based on the attempts that were made.
 
-For LBS customers, the SBMCA value is the iClick ID. For other customers, it takes the Corp ID. Therefore, this table is maintained at the SBMCA level.
+For AD, we got the correct number. It matches the Excel file Madhurima shared.
 
-Whenever a customer is uploaded to OnePush, a corresponding entry is created in this table.
+Kartikeya is now specifically working on TSC. He is not looking at the propensity score itself. He is trying to convert that propensity into NRR.
 
-TAC has a resting period of three months. For example, if a customer is uploaded today, we do not upload the same customer again for the next three months.
+From all the attempts made, he wants to identify whether the customer converted into a Corp cross-sell within 90 days of the attempt.
 
-The Metric Gather table primarily contains three variables:
-1. SBMCA
-2. Cohort date
-3. Vintage
+We prepared code for this, but the number we are getting is much lower than the total number of conversions.
 
-Vintage represents the first day of the month of the cohort date. For example, if the actual cohort date is January 13, the vintage will be January 1.
+He understands that there will be some difference. The file Madhurima shared covers whether an account converted during the entire year, irrespective of whether a solicitation or attempt was made.
 
-Himakaran: Got it.
+However, in our analysis, we are checking whether the account converted within 90 days of an attempt.
 
-Kartikeya: That is how the Metric Gather table works.
+Manager: You want to add information indicating whether a particular corporate account converted after an attempt?
 
-The table contains customer information at an iClick or SBMCA level. However, there is another customer identifier called the Account ID.
+Hima: Yes.
 
-Account ID is primarily used in Salesforce or OneForce.
+Manager: What type of attempts are you considering? Are you considering any attempt?
 
-At a high level, the code first retrieves all the customers from the Metric Gather table. By customers, I mean all the SBMCAs.
+Hima: Non-email attempts.
 
-For each SBMCA, we then try to retrieve its corresponding DHQ.
+Manager: That is important.
 
-Do you know what DHQ is?
+For non-email attempts, you are checking whether a corporate conversion occurred within 90 days. Is that what you want?
 
-Himakaran: I am not completely sure.
+Hima: Yes.
 
-Kartikeya: It is the headquarters iClick ID.
+Manager: We can provide that information.
 
-Each iClick ID should ideally be associated with a DHQ. Similarly, every Corp ID should also be associated with a DHQ.
+Is that all you need?
 
-This is a one-to-many relationship. One DHQ can have multiple iClick IDs and Corp IDs attached to it.
+Hima: Mostly, yes.
 
-Himakaran: Got it.
+Kartikeya is working on a broader requirement, but this is the specific part assigned to me.
 
-Kartikeya: We first take all the SBMCAs from the Metric Gather table and find the DHQ associated with each SBMCA.
+I needed some clarity because I missed a portion of his explanation and was not completely sure whether I had understood it correctly.
 
-We then use the DHQ-to-SBMCA mapping to retrieve all the SBMCAs associated with that DHQ. In this way, we expand the customer list.
+He explained the requirement to me at a high level. It was my mistake that I was unable to follow everything correctly.
 
-For example, suppose we initially have SBMCA “A,” and it is attached to DHQ “X.” If DHQ X has three SBMCAs—A, B, and C—our expanded data will contain all three: A, B, and C.
+Manager: Let me call Madhurima. Hold on.
 
-Himakaran: Understood.
+Hima: I can also share my screen and show you the code we are currently using.
 
-Kartikeya: That is the second step: attach the DHQ and retrieve all SBMCAs associated with that DHQ.
+Manager: I can provide data showing how many of the cross-sell conversions had a non-email attempt during the preceding 90 days.
 
-After that, we need to identify the Account ID.
+This information is available across two datasets. Madhurima only needs to join them.
 
-For each iClick ID and each Corp ID, we can retrieve an associated Account ID.
+Please join my Webex. Hold on.
 
-At this stage, the data contains:
-- All the SBMCAs
-- The corresponding DHQs
-- The cohort date on which the customer was uploaded
-- The corresponding Account ID
+We have extensive datasets created for TAC. Let me also invite Nikita to the call.
 
-Himakaran: Got it.
+Hima: Are you referring to the Metric Gather table?
 
-Kartikeya: Once we have this information, the next step is to determine whether the Account ID was attempted.
+Manager: Yes, the Metric Gather table and the cross-sell table. There are two tables.
 
-There is a table containing all attempts made against Account IDs from 2025 onward. You do not need to worry about the exact details of that table.
+Hima: We are primarily querying the Metric Gather table.
 
-Within the table, there is an indicator showing whether an attempt was a non-email attempt. We are primarily interested in non-email attempts because those are the attempts that can lead to a cross-sell conversion.
+Manager: That table was created by our team.
 
-Himakaran: Correct.
+Hima: Yes, we are using that table along with the cross-sell information.
 
-Kartikeya: There is also another table containing opportunity data.
+Manager: You are appearing under Anshit’s organization. Are you working on Kartikeya’s team or Anshit’s team?
 
-The opportunity data tells us which Opportunity ID was created for each customer.
+Hima: I joined Anshit’s team approximately two months ago, but I am currently working with Kartikeya.
 
-Before a signing takes place, an MBD creates an opportunity for the customer. The opportunity then gradually moves through different stages—stage one, stage two, stage three, and so on—until it may eventually become a conversion.
+Manager: So, you are part of Nova?
 
-The opportunity table therefore provides the mapping between Account IDs and Opportunity IDs.
+Hima: Yes, Nova.
 
-At this point, we have three main data components:
-1. The customer base containing SBMCA, DHQ, cohort date, and Account ID
-2. The attempt table containing Account ID and attempt date
-3. The opportunity table containing Account ID and Opportunity ID
+Manager: The important people you need to contact for this are Nikita and Madhurima.
 
-Whenever a customer is uploaded, we give the MBD 90 days to create an opportunity for that customer.
+Nikita has all the information regarding the Metric Gather table and TSC. Another colleague, possibly Mingmi, may also have information, but I spoke with her previously.
 
-If an opportunity is created within those 90 days, we track that opportunity and determine whether it eventually resulted in a Corp cross-sell conversion.
+Let Madhurima join. Once she joins, I will explain your requirement and make sure the required information is provided to you.
 
-Himakaran: Okay.
+Nikita Joins the Call
 
-Kartikeya: We also received a separate dataset from Madhurima. It contains the Opportunity IDs that were converted into Corp cross-sell signings.
+Manager: Nikita, let me explain the requirement.
 
-She previously shared similar information for the ICM exercise.
+Madhurima has also been contacted.
 
-Himakaran: Yes. The existing-customer data?
+Hima is working on an analysis. I do not know the complete context regarding the model, but the immediate requirement concerns the TSC channel.
 
-Kartikeya: Yes, the customer data.
+He is reviewing non-email attempts made against leads provided through the TSC channel. He wants to determine how many of those leads resulted in a corporate cross-sell within 90 days.
 
-She shared that information with us again today. Her data contains the Corp information as well as the associated Opportunity IDs.
+The Metric Gather table contains information about attempts, including non-email attempts.
 
-Are you clear up to this point?
+Do we also have the date on which each attempt occurred?
 
-Himakaran: Yes.
+Nikita: Yes, we have that information.
 
-Kartikeya: Himakaran, are you there?
+Hima, are you working with the same data?
 
-Himakaran: Sorry, there was a disturbance and I could not hear you for a short period.
+Hima: Yes.
 
-Kartikeya: No problem.
+Nikita: I believe he already has the required data.
 
-To summarize, we take all the customers and check whether each customer was attempted within the allowed period following the upload.
+Hima: Yes, I have the data. The issue is that the number we are getting is much lower.
 
-If the customer was attempted, we identify the opportunity created for that customer and check whether the opportunity ultimately led to a cross-sell.
+Manager: Let me complete the explanation.
 
-If it resulted in a cross-sell, we assign the target value as one. Otherwise, we assign zero.
+After identifying a non-email attempt, he wants to determine whether a cross-sell occurred for that lead within the following 90 days.
 
-For TSC, the resulting dataset is unique at the DHQ × minimum-attempt-date level. It contains a Y value of either one or zero depending on whether a qualifying converted Opportunity ID is found.
+The cross-sell information is available with Madhurima. We need to join the two datasets and provide the resulting number.
 
-That is how the TSC dataset is created.
+Which vintage are you reviewing, Hima?
 
-Himakaran: Okay.
+Hima: The 2025 vintage.
 
-Kartikeya: The approach for AD is similar. However, because AD is a managed portfolio, the data is created at a customer, DHQ, and month level.
+Manager: 2025?
 
-For TSC, the level is:
-DHQ × minimum-attempt-date
+Hima: Yes, 2025.
 
-For AD, the level is:
-DHQ × month × minimum-attempt-date
+Manager: I am not sure when Madhurima will join. Her status indicates that she may be at lunch.
 
-Within every month, we identify the minimum attempt date. We then give the MBD another 30 days from that minimum attempt date to create an opportunity.
+Nikita, can you speak with Madhurima about this? If she joins this meeting, I will explain it to her directly.
 
-Finally, we determine whether that opportunity resulted in a proper conversion.
+We previously had this same discussion with Kartikeya and shared everything required.
 
-Himakaran: Got it.
+Nikita: Exactly. I had the same conversation with Kartikeya.
 
-Kartikeya: Are you clear about how the data is created?
+He created the attempt data using our base, joined it with the signing data, and then joined it with the cross-sell data.
 
-Himakaran: Yes, it is clear.
+He should already have everything required for the 2025 vintage.
 
-Kartikeya: Now I will explain why I told you the entire story.
+Manager: In that case, what do you still need, Hima?
 
-Madhurima creates a dataset that contains approximately 265 signings. This is the same Excel dataset she shared today, on which you were also copied.
+Hima: The setup is exactly as Nikita described. Kartikeya has already created that logic.
 
-If you count the conversions in that dataset, the number is approximately 250.
+However, for the 2025 vintage, our code is returning approximately 83 signings.
 
-However, when we perform the exercise using our own code, we obtain a smaller number.
+Based on the complete yearly data, Madhurima’s cross-sell count is approximately 130.
 
-Give me one second—I am in a cab.
+Kartikeya feels that the difference between 83 and 130 is too large.
 
-Himakaran: Sure.
+We want to understand what we may be missing while implementing the logic.
 
-Kartikeya: Hello. Am I audible now?
+Nikita: I believe we discussed this with Kartikeya.
 
-Himakaran: Yes, you are audible.
+Suppose a particular iClick ID is activated from the base. That record is present in the Metric Gather table.
 
-Kartikeya: The number of Corp cross-sell signings in Madhurima’s data for TAC and AD combined is approximately 230 to 240.
+However, when we review attempts, we may need to examine them at the broader RP or related-account level and retrieve the attempts associated with that hierarchy.
 
-However, when we perform the same exercise using our approach for the same time period, we identify significantly fewer records—approximately 30% to 40% fewer.
+Kartikeya said he would include that logic and check the attempts again.
 
-I tried to discuss this with Madhurima, but it was getting late and we could not complete the discussion.
+There may also be an impact from portfolio data.
 
-What I want you to do is take the code I have created, obtain the code Madhurima uses to generate her dataset, compare the two, and fix or improve our code.
+A Corp conversion can take time to receive approval. An attempt may have occurred, but the final approval may take considerably longer.
 
-Himakaran: Got it.
+Hima: Okay.
 
-Kartikeya: We need to correct the code so that the data is created properly.
+Nikita: That is why we normally allow a window of six or seven months after the opportunity is created. The Corp approval and signing process takes time.
 
-Madhurima also receives a starting TAC table from Saurabh’s team. I checked that starting base against ours, and the number of customers differs by less than 1%, probably less than 0.5%.
+Hima: So you are saying that the conversion may occur much later than the attempt?
 
-Therefore, the starting customer base is unlikely to be the problem.
+Nikita: Correct.
 
-My suggestion is:
-- Obtain Madhurima’s code
-- Review the code I created
-- Compare the two approaches
-- Create an improved version that captures all the relevant signings
+In fact, identifying approximately 80 conversions out of 130 is a good ratio.
 
-Their process can identify that a specific signing belongs to a particular iClick ID. Our process is currently failing to identify some of those relationships.
+If Madhurima’s table contains approximately 130 TSC cross-sell conversions for 2025 and you can capture approximately 80 using a 90-day window, that is already a reasonable result.
 
-That is the main problem.
+Hima: The reason we are getting only 83 is because we are restricting the conversion to the 90-day period?
 
-Himakaran: Understood. It is clear.
+Nikita: Yes. Some conversions take longer than 90 days.
 
-Kartikeya: You understand the complete situation?
+That is probably why the remaining records are not being captured.
 
-Himakaran: Yes, it is very clear.
+Madhurima Joins or Speaks
 
-Kartikeya: Are you available now?
+Madhurima: One more point: a signing can take up to six months. It is not always completed within three months.
 
-Himakaran: Yes.
+For some analyses, we may use a 12-month window from the opportunity-creation date.
 
-Kartikeya: Can you join my Webex? I will start it in two minutes and walk you through the code.
+Nikita: For SBS, I believe the window is six months.
 
-Himakaran: Sure.
+Madhurima: Yes.
 
-Kartikeya: Once you see the code, it will be much easier to understand.
+Nikita: That explains the difference, Hima. The approval or signing date may occur well after the 90-day period.
 
-Himakaran: Okay.
+Hima: Understood.
 
+I was checking only three or four months after the attempt and trying to identify the conversion within that period.
 
-Recording 2: Webex Code Walkthrough
+Nikita: Yes.
 
-Kartikeya: Let me know whether you can see my screen.
+Manager: Hima, our team meeting is about to start. Do you have any other questions?
 
-Himakaran: Yes, I can see it.
+Hima: No. The number now appears to be validated.
 
-Kartikeya: We will start with TAC, as I mentioned earlier.
+I will discuss this with Kartikeya. If he still needs something different, we will contact you again.
 
-I have made several edits to this notebook, so I want to explain clearly which portions are relevant.
+Manager: Done. If there is any confusion, contact Nikita and Madhurima together.
 
-This is the TAC Metric Gather table. We select everything from January 2025 onward.
+Hima: Thank you very much.
 
-Whatever is commented out is not currently being run. This is the code that we have actually executed.
+Manager: Thank you.
 
-First, we create a mapping between the iClick ID and the DHQ ID. As I mentioned earlier, we can obtain this mapping for both organization customers and open customers.
+Hima: Thank you, sir. Thank you, Nikita.
 
-Himakaran: Yes.
+Nikita: Thank you.
 
-Kartikeya: We combine those mappings.
+Participants: Bye.
 
-After that, we retrieve the DHQ iClick ID. Using that DHQ iClick ID, we retrieve all the related iClick IDs again.
+Main Conclusion from the Call
 
-Then we create another table containing the mapping between iClick IDs and Account IDs.
+The difference between the approximately 83 conversions captured by the code and the approximately 130 total conversions in Madhurima’s data may not indicate an error.
 
-Let me move this section upward so that the flow is clearer.
+The current code only counts conversions occurring within 90 days of a non-email attempt. However, Corp approval and signing may require:
 
-This is the first dataset I described during our earlier call.
+- Six or seven months in some cases
+- Up to twelve months from opportunity creation in certain analyses
 
-Next, this is the attempt data. You do not need to change anything here. It contains all attempt information from January 2025 onward.
+Therefore, several valid cross-sell conversions may fall outside the 90-day window. Capturing approximately 80 out of 130 conversions may be considered a reasonable result under the current 90-day rule.
 
-After that comes the opportunity data. This contains opportunity information from January 2020 onward for customers who had opportunities.
+Kartikeya should confirm whether the intended analysis requires:
 
-Himakaran: Okay.
+1. A strict 90-day conversion window, or
+2. A longer window of six to twelve months
 
-Kartikeya: Now look at what we are doing here.
-
-We create the minimum attempt date at a DHQ and cohort level. We already have the DHQ and the cohort date, which represents when the customer was uploaded.
-
-We determine the minimum attempt date for that particular combination and store it.
-
-For attempts, we only consider qualifying non-email attempts. The relevant attempt indicator must equal one.
-
-The activity date, meaning the attempt date, must be between the cohort date and the cohort date plus 90 days.
-
-Himakaran: Got it.
-
-Kartikeya: This is exactly the rule I explained earlier.
-
-We then take the full starting base and merge the attempt data into it at the DHQ and cohort level. This assigns the minimum attempt date.
-
-After that, we merge the opportunity data at the Account ID level.
-
-The opportunity creation date must also be between the cohort date and the cohort date plus 90 days.
-
-Himakaran: Yes.
-
-Kartikeya: The activity date can occur during the 90-day period because we only select activities within that window.
-
-Similarly, the opportunity must be created within the same allowed period.
-
-The opportunity creation date must also be after the minimum attempt date, which is logical because an opportunity should only be created after an attempt.
-
-Himakaran: Yes.
-
-Kartikeya: Once that is done, we use this final signing dataset. This is the dataset Madhurima shared with us.
-
-It is maintained at the Opportunity ID level. It should broadly match the Excel file she shared.
-
-The required indicators include the sales Corp cross-sell indicator and the Corp cross-sell indicator being equal to one.
-
-Let me remove the unnecessary parts so the relevant logic is easier to understand.
-
-The resulting number from our code is approximately 83 to 89.
-
-For this exercise, the relevant year is 2025, the Corp cross-sell indicator equals one, and the team is TSC.
-
-I do not care about the later portions of the notebook for this task. You can ignore or remove those sections because I only need your help up to this point.
-
-Let me show you the TAC numbers from the dataset Madhurima shared.
-
-When I apply the TAC filter and select the year 2025, the dataset contains 113 records.
-
-Our code currently produces approximately 80 to 89 records. Therefore, we are losing approximately 20 to 30 records, which is a significant percentage for TAC.
-
-Himakaran: Okay.
-
-Kartikeya: Now let us look at AD.
-
-I will run this while explaining it so that the logic is clear.
-
-Are you experiencing any problems with Lumi today?
-
-Himakaran: I have not run many queries today, so I have not specifically noticed anything.
-
-Kartikeya: I am facing several issues with it.
-
-For AD, this is the complete AD customer base. The team values appear to include TAD and FAD, and possibly another value.
-
-I believe the relevant values are primarily TAD and FAD.
-
-We use the same DHQ-to-iClick mapping to retrieve the DHQs.
-
-In the AD code, we retrieve the DHQ, but we do not expand the DHQ back into all related iClick IDs again.
-
-We could do that, but it did not provide additional value, so we did not include it. However, it remains an option.
-
-After retrieving the iClick-to-Account-ID mapping, we create the data at a customer × month level.
-
-We create a month-level join. The months run from April through December.
-
-TSC covers the entire year 2025, whereas AD covers April 2025 through December 2025, which is nine months.
-
-After that, we apply similar attempt logic.
-
-First, we retrieve all the activities performed for each customer within each month.
-
-For every month in which a customer was attempted, we calculate the minimum attempt date for that month.
-
-We use an inner join so that only customers with an attempt are retained.
-
-The resulting attempt table contains the DHQ, iClick ID, activity month, and minimum attempt date for that month.
-
-Himakaran: Got it.
-
-Kartikeya: After that, the opportunity logic is similar, except that the opportunity must be created within the next 30 days, rather than 90 days.
-
-Himakaran: Okay.
-
-Kartikeya: We use 30 days because the minimum attempt date is calculated separately for each month. Using a longer window would create excessive overlap.
-
-For each monthly minimum attempt date, an opportunity must be created within the following 30 days.
-
-Once the opportunity is created, we check whether it exists in the converted-opportunity dataset.
-
-Do you understand the high-level AD process?
-
-Himakaran: Yes, it is clear.
-
-Kartikeya: The goal is to count the distinct qualifying records and compare the result against Madhurima’s dataset.
-
-Initially, we believed that there was a mismatch in both TSC and AD.
-
-Some of the major tables have already been executed, so they do not need to run again. A few remaining queries still need to be executed.
-
-Can you run this query on your side?
-
-Himakaran: Yes.
-
-Kartikeya: Do you have access to [MESQ or similar system name unclear]?
-
-Himakaran: I will have to check. I am not sure.
-
-Kartikeya: Start by running the first query.
-
-Himakaran: Lumi is starting. Give me a second.
-
-Kartikeya: Is it running?
-
-Himakaran: Lumi is restarting.
-
-Kartikeya: Let me show you the result on my side in the meantime.
-
-For TAC, Madhurima’s dataset contains 113 records.
-
-For AD, I also need to filter the months. I am only selecting January, February, and March here—wait, let me correct the filters.
-
-The resulting count is 109.
-
-Therefore:
-- TAC expected count: approximately 113
-- AD expected count: approximately 109
-
-I also wanted to show you the team values available in ADLS. We have selected all three relevant team values because we want to capture all of them.
-
-The two queries that may take time are:
-1. The iClick-to-DHQ mapping
-2. The Account ID mapping
-
-These queries retrieve a large amount of data.
-
-Were you able to run the first query?
-
-Himakaran: I have opened the notebook. It is quite long. Which query should I run?
-
-Kartikeya: Run the setup table—the first table from the Metric Gather table.
-
-Himakaran: Okay.
-
-Kartikeya: Let me know when it finishes.
-
-Himakaran: The kernel keeps getting disconnected automatically.
-
-Kartikeya: Are you working from home or from the office?
-
-Himakaran: From home.
-
-Kartikeya: There may be an issue or an update happening in Lumi. Normally, this should only take around two minutes.
-
-The first table has finally completed on my side.
-
-Are you able to connect and verify whether you have access?
-
-Himakaran: No. I am not able to establish the Lumi connection.
-
-Kartikeya: That is okay. The table has completed on my side. Let me show you the results again.
-
-For TAC, our current result is 86.
-
-Ideally, it should be close to 110 or 113. It will not necessarily match exactly, but it should be within a similar range.
-
-Himakaran: Yes.
-
-Kartikeya: Let me check AD.
-
-The AD result is 109.
-
-That is the same number shown in Madhurima’s data.
-
-Therefore, AD appears to be completely correct.
-
-The remaining mismatch is only in TSC.
-
-Earlier, I may have executed the wrong version of the code, which made it look as though AD also had an issue.
-
-Himakaran: So TSC is the only problem?
-
-Kartikeya: Yes.
-
-For TSC, we currently obtain 86 records, whereas the expected number is approximately 113.
-
-Your task is to review Madhurima’s code, compare it with our code, and determine why our logic is missing those records.
-
-Check whether their approach and our approach are broadly the same, and identify any differences in joins, mappings, date conditions, filters, or opportunity attribution.
-
-Himakaran: Okay.
-
-Kartikeya: Use ChatGPT if it helps, but make sure you continue providing me with updates on your progress.
-
-Himakaran: Sure.
-
-Kartikeya: Great. Thank you. Bye.
-
-Himakaran: Thank you. Bye.
-
-Summary of Assigned Task:
-Compare Madhurima’s TSC-generation code with the current code and identify why the current result is 86 records instead of approximately 113.
+The team should also verify whether attempts need to be expanded and checked at the broader RP, account hierarchy, or related iClick level.
