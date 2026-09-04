@@ -1,242 +1,327 @@
-Call Transcript
+Kartikeya–Himakaran Call Transcript
+Source: WhatsApp Audio 2026-09-04 at 11.30.14 AM
 
-Participants
+Speakers:
+- Kartikeya: Manager / person explaining, assigning tasks, and giving guidance
+- Himakaran: Person receiving the instructions, responding, and providing updates
 
-Hima / Himakaran: Working with Kartikeya and explaining the requirement.
-Manager / Senior Colleague: Leads the discussion and coordinates with Nikita and Madhurima.
-Nikita: Provides information about the Metric Gather table, TSC logic, attempts, and conversion timelines.
-Madhurima: Provides information about the cross-sell data and signing/conversion window.
+------------------------------------------------------------
+TRANSCRIPT
+------------------------------------------------------------
 
-Transcript
+Kartikeya: Yeah, hi. Good evening.
 
-Hima: Hi, sir.
+Himakaran: Yeah, hi.
 
-Manager: Hello.
+Kartikeya: Hi, Hima. Okay, so one good news — Ashish has approved, right?
 
-Another participant: Hello.
+Himakaran: Oh, okay.
 
-Hima: Hi. Hello, hello. Hi, sir.
+Kartikeya: So at least that got sorted. You were there in the email thread, right?
 
-Manager: Hima, my question to you is: what exactly do you need?
+Himakaran: I didn’t get any email from Ashish. I don’t think so.
 
-Hima: Presently, Kartikeya is working on an analysis based on the attempts that were made.
+Kartikeya: One second. No, no, you must be. I believe you are there in the email thread, right?
 
-For AD, we got the correct number. It matches the Excel file Madhurima shared.
+Himakaran: I got your Alfredo emails, but I think... I’ll check.
 
-Kartikeya is now specifically working on TSC. He is not looking at the propensity score itself. He is trying to convert that propensity into NRR.
+Kartikeya: There was an email which I wrote to Ashish as well. That part you saw?
 
-From all the attempts made, he wants to identify whether the customer converted into a Corp cross-sell within 90 days of the attempt.
+Himakaran: One second, I’m checking in sent items. It’s updating; it’s not loading. I got the notification on my phone, though. I’ll check.
 
-We prepared code for this, but the number we are getting is much lower than the total number of conversions.
+Kartikeya: Okay. But there was an email which I sent out to Ashish. My point is, he said he’s good with that.
 
-He understands that there will be some difference. The file Madhurima shared covers whether an account converted during the entire year, irrespective of whether a solicitation or attempt was made.
+Himakaran: Okay, great. Great.
 
-However, in our analysis, we are checking whether the account converted within 90 days of an attempt.
+Kartikeya: Nice. So if Ashish is okay, at least the alignment that we needed from the AIM side is something we have.
 
-Manager: You want to add information indicating whether a particular corporate account converted after an attempt?
+Himakaran: Okay.
 
-Hima: Yes.
+Kartikeya: Now we have a meeting with Alfredo on Tuesday. I’ve already set it up as well, right?
 
-Manager: What type of attempts are you considering? Are you considering any attempt?
+Himakaran: Okay, yeah.
 
-Hima: Non-email attempts.
+Kartikeya: In that meeting, you can just walk him through whatever we have done.
 
-Manager: That is important.
+Himakaran: Sure.
 
-For non-email attempts, you are checking whether a corporate conversion occurred within 90 days. Is that what you want?
+Kartikeya: We don’t need to go into too much detail. I think Monday is a holiday in the U.S., right?
 
-Hima: Yes.
+Himakaran: Yes, yes.
 
-Manager: We can provide that information.
+Kartikeya: It’s not a holiday in India?
 
-Is that all you need?
+Himakaran: No. In India it is more of an optional leave. You are given a certain number of leaves in a year, and depending on which holidays you want to pick, you can choose those.
 
-Hima: Mostly, yes.
+Kartikeya: Okay, that’s fine. What I would suggest is: please be prepared because you will need to present it on Tuesday.
 
-Kartikeya is working on a broader requirement, but this is the specific part assigned to me.
+Himakaran: Okay, got it.
 
-I needed some clarity because I missed a portion of his explanation and was not completely sure whether I had understood it correctly.
+Kartikeya: To Alfredo. Probably I’ll ask you only, because you have done the work, right?
 
-He explained the requirement to me at a high level. It was my mistake that I was unable to follow everything correctly.
+Himakaran: Yeah, yeah.
 
-Manager: Let me call Madhurima. Hold on.
+Kartikeya: But don’t go too much into the details. The idea is just to let him know, “This is how we have done it.” We are not really asking for his alignment. It is more about showing him how we calculated it.
 
-Hima: I can also share my screen and show you the code we are currently using.
+Himakaran: Got it.
 
-Manager: I can provide data showing how many of the cross-sell conversions had a non-email attempt during the preceding 90 days.
+Kartikeya: Cool. The second aspect is: you previously told me that, for uploading into TM1, you had applied for access for both of us.
 
-This information is available across two datasets. Madhurima only needs to join them.
+Himakaran: Yes, yes.
 
-Please join my Webex. Hold on.
+Kartikeya: Do we have the access now?
 
-We have extensive datasets created for TAC. Let me also invite Nikita to the call.
+Himakaran: I think the access is approved. I got the email yesterday. While we were in the meeting with Ashish, I think we got the access.
 
-Hima: Are you referring to the Metric Gather table?
+Kartikeya: Okay, so you are saying we have access. What I would suggest is: please work with Megan. Have a conversation with her today itself on how to upload something into TM1, because essentially we will need to update it on the ICM part, right?
 
-Manager: Yes, the Metric Gather table and the cross-sell table. There are two tables.
+Himakaran: Yeah, yeah.
 
-Hima: We are primarily querying the Metric Gather table.
+Kartikeya: It should not happen that on Tuesday we don’t know how to do it.
 
-Manager: That table was created by our team.
+Himakaran: Sure. I’ll get it clarified today.
 
-Hima: Yes, we are using that table along with the cross-sell information.
+Kartikeya: Better be prepared today itself on how to do this.
 
-Manager: You are appearing under Anshit’s organization. Are you working on Kartikeya’s team or Anshit’s team?
+Himakaran: Yeah, sure.
 
-Hima: I joined Anshit’s team approximately two months ago, but I am currently working with Kartikeya.
+Kartikeya: Then comes the third aspect. I asked you for the deck from Mo’s meeting, right?
 
-Manager: So, you are part of Nova?
+Himakaran: Yeah.
 
-Hima: Yes, Nova.
+Kartikeya: There was a deck that we were preparing from that discussion, right?
 
-Manager: The important people you need to contact for this are Nikita and Madhurima.
+Himakaran: Yeah, yeah.
 
-Nikita has all the information regarding the Metric Gather table and TSC. Another colleague, possibly Mingmi, may also have information, but I spoke with her previously.
+Kartikeya: What I want from you is to make sure that the deck is now updated as per the latest information we had with Mo.
 
-Let Madhurima join. Once she joins, I will explain your requirement and make sure the required information is provided to you.
+Himakaran: Okay.
 
-Nikita Joins the Call
+Kartikeya: She said she would be sharing some additional information. Whatever they have not shared yet is fine. But whatever they have shared, let’s update it in the deck. Let’s not keep it on hold.
 
-Manager: Nikita, let me explain the requirement.
+Himakaran: Okay.
 
-Madhurima has also been contacted.
+Kartikeya: Since we created the deck and shared it with Mo, it is actually a good thing that now we are aligned with them. Whatever we put in the deck means they are also aligned with it, right?
 
-Hima is working on an analysis. I do not know the complete context regarding the model, but the immediate requirement concerns the TSC channel.
+Himakaran: Yeah.
 
-He is reviewing non-email attempts made against leads provided through the TSC channel. He wants to determine how many of those leads resulted in a corporate cross-sell within 90 days.
+Kartikeya: So we are good on that front too. But whatever we discussed needs to be updated in the deck. Let me tell you the high-level objective.
 
-The Metric Gather table contains information about attempts, including non-email attempts.
+Himakaran: Okay.
 
-Do we also have the date on which each attempt occurred?
+Kartikeya: This deck will give us a template for how exactly we are going to partner with the sales team.
 
-Nikita: Yes, we have that information.
+Himakaran: Got it.
 
-Hima, are you working with the same data?
+Kartikeya: Anything that you don’t put in is going to hurt us. So whatever discussion we had needs to reflect in that deck 100%.
 
-Hima: Yes.
+Himakaran: Okay.
 
-Nikita: I believe he already has the required data.
+Kartikeya: I would say, try to put even the smaller details as much as you can. Formatting is secondary. Content is the first aspect. From a content point of view, it has to be very exhaustive.
 
-Hima: Yes, I have the data. The issue is that the number we are getting is much lower.
+By exhaustive, I mean:
+- Which teams are we working with?
+- How are we going to collaborate with them?
+- What are the timelines?
+- How are we going to define success?
 
-Manager: Let me complete the explanation.
+Everything of that sort needs to come in.
 
-After identifying a non-email attempt, he wants to determine whether a cross-sell occurred for that lead within the following 90 days.
+Himakaran: Okay.
 
-The cross-sell information is available with Madhurima. We need to join the two datasets and provide the resulting number.
+Kartikeya: Whenever we have a discussion with Mo’s team — or any of our partners — make it a habit to always write the minutes of the meeting, so that we don’t lose anything.
 
-Which vintage are you reviewing, Hima?
+Himakaran: Yeah, yeah. Got it.
 
-Hima: The 2025 vintage.
+Kartikeya: One good thing you can ensure is that, since we are having the meeting on Teams, you can actually get a download or transcript directly from Copilot as well.
 
-Manager: 2025?
+Himakaran: Okay. So even now I can get the old transcript?
 
-Hima: Yes, 2025.
+Kartikeya: No. Now you can’t. While the meeting is still available, you can use it. Once the meeting is gone, then there may not be a record available to you in the same way.
 
-Manager: I am not sure when Madhurima will join. Her status indicates that she may be at lunch.
+Since I had to move to Ashish’s meeting just after that, and the same happened with you, I think we lost it in between.
 
-Nikita, can you speak with Madhurima about this? If she joins this meeting, I will explain it to her directly.
+Himakaran: Yes.
 
-We previously had this same discussion with Kartikeya and shared everything required.
+Kartikeya: So what I want you to do is: whatever we discussed with Mo, whatever your memory serves, write it down and share it over email as “this is what we discussed.”
 
-Nikita: Exactly. I had the same conversation with Kartikeya.
+Actually, you do not need to share it only with me. You can share it with the entire group that was in the discussion. You can say, “This is what we discussed, this is what we aligned on, and we have updated the same in the deck as well.”
 
-He created the attempt data using our base, joined it with the signing data, and then joined it with the cross-sell data.
+Himakaran: Okay.
 
-He should already have everything required for the 2025 vintage.
+Kartikeya: Cool. That is fine, right?
 
-Manager: In that case, what do you still need, Hima?
+Himakaran: Yeah.
 
-Hima: The setup is exactly as Nikita described. Kartikeya has already created that logic.
+Himakaran: And if you remember any other points from your side, or if you made notes, you can send them to me and I can list them.
 
-However, for the 2025 vintage, our code is returning approximately 83 signings.
+Kartikeya: Yes. You remember we were mainly discussing the questions which I had put there?
 
-Based on the complete yearly data, Madhurima’s cross-sell count is approximately 130.
+Himakaran: Yeah.
 
-Kartikeya feels that the difference between 83 and 130 is too large.
+Kartikeya: Go through those one by one and you’ll get an idea of what we discussed.
 
-We want to understand what we may be missing while implementing the logic.
+Himakaran: Okay.
 
-Nikita: I believe we discussed this with Kartikeya.
+Kartikeya: It was mainly that, among the three teams, we are only going to do it for digital deployment for now, right?
 
-Suppose a particular iClick ID is activated from the base. That record is present in the Metric Gather table.
+Himakaran: Yeah.
 
-However, when we review attempts, we may need to examine them at the broader RP or related-account level and retrieve the attempts associated with that hierarchy.
+Kartikeya: Within those, the two types of triggers we are primarily going to focus on are:
+- Adoption
+- Utilization
 
-Kartikeya said he would include that logic and check the attempts again.
+The growth trigger will be done later down the line, not right now.
 
-There may also be an impact from portfolio data.
+Himakaran: Yes, yes.
 
-A Corp conversion can take time to receive approval. An attempt may have occurred, but the final approval may take considerably longer.
+Kartikeya: That is what we aligned on. We are trying to launch it somewhere around January or February, and about one month after that we will start the next phase. That’s what we aligned.
 
-Hima: Okay.
+Himakaran: Yeah.
 
-Nikita: That is why we normally allow a window of six or seven months after the opportunity is created. The Corp approval and signing process takes time.
+Kartikeya: And for the success metrics, we still need to get the details.
 
-Hima: So you are saying that the conversion may occur much later than the attempt?
+Himakaran: Yeah.
 
-Nikita: Correct.
+Kartikeya: Regarding the success metrics, what did they say?
 
-In fact, identifying approximately 80 conversions out of 130 is a good ratio.
+Himakaran: They mentioned that, for the variables they had previously provided and which they think are important, they will create a tagging.
 
-If Madhurima’s table contains approximately 130 TSC cross-sell conversions for 2025 and you can capture approximately 80 using a 90-day window, that is already a reasonable result.
+They will say whether a particular signal belongs to adoption or utilization, and what the CTA should be for that signal — basically, what we want MBDs to do given that signal.
 
-Hima: The reason we are getting only 83 is because we are restricting the conversion to the 90-day period?
+They may want them to make someone adopt a new feature, start utilizing it, or increase the engagement of that customer with a particular feature.
 
-Nikita: Yes. Some conversions take longer than 90 days.
+They will divide the signals in that way.
 
-That is probably why the remaining records are not being captured.
+And for each signal, they will also define what success metric we should look at.
 
-Madhurima Joins or Speaks
+Kartikeya: Exactly. How do we know whether the triggers we provide are helping us or not? Right now, we don’t know that.
 
-Madhurima: One more point: a signing can take up to six months. It is not always completed within three months.
+Himakaran: Yes, yes.
 
-For some analyses, we may use a 12-month window from the opportunity-creation date.
+Kartikeya: This is something they are going to provide in an Excel format.
 
-Nikita: For SBS, I believe the window is six months.
+Apart from this, another important question that came up was about the insights and CTA interface.
 
-Madhurima: Yes.
+As of now, the sales team wants to review how the insights and CTA are shown in OneForce. They wanted to understand more about the interface, right?
 
-Nikita: That explains the difference, Hima. The approval or signing date may occur well after the 90-day period.
+Himakaran: Yeah.
 
-Hima: Understood.
+Kartikeya: They said they will have an internal discussion with someone who will show them how the insights look, how the CTA looks, and so on, so that they know exactly what will be shown to the sales colleagues.
 
-I was checking only three or four months after the attempt and trying to identify the conversion within that period.
+That point also needs to go into the deck.
 
-Nikita: Yes.
+So think through what was discussed. Don’t wait for me to tell you every single thing you need to do. Think on your own.
 
-Manager: Hima, our team meeting is about to start. Do you have any other questions?
+I told you that this is the project I am expecting you to lead.
 
-Hima: No. The number now appears to be validated.
+Himakaran: Yeah, sure.
 
-I will discuss this with Kartikeya. If he still needs something different, we will contact you again.
+Kartikeya: Think from that perspective.
 
-Manager: Done. If there is any confusion, contact Nikita and Madhurima together.
+Himakaran: Okay, got it.
 
-Hima: Thank you very much.
+Kartikeya: So you have to:
+1. Write the minutes of the meeting.
+2. Update the deck.
+3. Work with Megan to understand how to upload on the TM1 platform.
+4. Prepare yourself to present it to Alfredo on Tuesday.
 
-Manager: Thank you.
+Himakaran: Sure, sure.
 
-Hima: Thank you, sir. Thank you, Nikita.
+Kartikeya: One more thing. This is something you can pick up going forward as well.
 
-Nikita: Thank you.
+If you refer to my email to Ashish, I want you to leverage it as a learning example. This is more of a habit thing.
 
-Participants: Bye.
+I took a lot of time to learn this, so I want you to get some ideas from how I communicate with Ashish.
 
-Main Conclusion from the Call
+When you write an email, you give:
+- The context
+- Why it is needed
+- Any urgency, if there is urgency
 
-The difference between the approximately 83 conversions captured by the code and the approximately 130 total conversions in Madhurima’s data may not indicate an error.
+Put the important point at the top, and then explain the rest of the email.
 
-The current code only counts conversions occurring within 90 days of a non-email attempt. However, Corp approval and signing may require:
+Himakaran: Okay.
 
-- Six or seven months in some cases
-- Up to twelve months from opportunity creation in certain analyses
+Kartikeya: The reason I am saying this is that yesterday we had a discussion with Ashish, but at a high level we already knew it would go to Finance because Finance has been asking for it.
 
-Therefore, several valid cross-sell conversions may fall outside the 90-day window. Capturing approximately 80 out of 130 conversions may be considered a reasonable result under the current 90-day rule.
+Himakaran: Yes.
 
-Kartikeya should confirm whether the intended analysis requires:
+Kartikeya: It’s not like they are not going to need it. And if you are sharing anything with Finance, it needs to be approved by Ashish as well.
 
-1. A strict 90-day conversion window, or
-2. A longer window of six to twelve months
+Himakaran: Oh yes. That is also needed.
 
-The team should also verify whether attempts need to be expanded and checked at the broader RP, account hierarchy, or related iClick level.
+Kartikeya: Exactly. So you could have written the email on your own as well.
+
+Himakaran: Okay.
+
+Kartikeya: You could have said, “This is the draft.” I could have updated it.
+
+Himakaran: Yeah.
+
+Kartikeya: I want you to take ownership of that. I’m not saying to directly send it without checking.
+
+You could have shown it to me, and I would have updated it.
+
+But next time, since you have done the hard work, I don’t want to be the one sending the email to Ashish.
+
+Himakaran: Got it. Sure.
+
+Kartikeya: It’s just a minor thing, not a major one. I’m saying this from a career growth point of view.
+
+Himakaran: Yes, yes. I understood.
+
+Kartikeya: Anything you want to discuss with me?
+
+Himakaran: Nothing much from this, I guess. I’ll let you know if anything comes up.
+
+Kartikeya: Okay. What happened with Saurabh’s team? Earlier you were saying they were not ready to share something.
+
+Himakaran: Basically, Saurabh added Nikita and Madhurima.
+
+Nikita said that Kartikeya had already walked her through everything and that they had already discussed it before.
+
+I told her that our numbers were not completely matching, even though we knew there would be some difference at this level.
+
+I walked her through what we were doing.
+
+She said that logic-wise it is correct, and that this is also what she had discussed with Kartikeya before.
+
+Kartikeya: Yeah, I had a chat with her previously. Earlier it was related to effective signing. This time it was all signings.
+
+Himakaran: Right. She said that because we are taking a three-month window, the number we are getting is actually a good sign.
+
+If the total is around 113 and we are getting around 83, then capturing 83 is reasonable because corporate conversion can generally take six months or even up to a year.
+
+Kartikeya: Okay, cool. So she is saying everything is good?
+
+Himakaran: Yeah, everything is good enough. Around 83 out of 113 is considered good.
+
+Kartikeya: So what is the next step for us in that scenario?
+
+Himakaran: For this, I think we are aligned with them.
+
+Kartikeya: Good. Then let’s close out the chapter. We don’t need to pursue them anymore.
+
+Himakaran: Okay, okay.
+
+Kartikeya: We are good. We know how to do it now, right?
+
+Himakaran: Yeah.
+
+Kartikeya: Anytime in the future, if we want to see how many cross-sells we had, we should be able to do it as well.
+
+Himakaran: Yes.
+
+Kartikeya: So AD side we are good. TSC side we are good.
+
+Himakaran: Yes.
+
+Kartikeya: Then I think this is clear. This is absolutely clear.
+
+Thank you.
+
+Himakaran: Thank you.
+
+Kartikeya: Have a good weekend.
